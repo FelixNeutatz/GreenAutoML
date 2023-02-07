@@ -10,7 +10,7 @@ datasets = [168794, 168797, 168796, 189871, 189861, 167185, 189872, 189908, 7510
 program = '/home/neutatz/Software/DeclarativeAutoML/fastsklearnfeature/declarative_automl/optuna_package/myautoml/analysis/parallel_all_only_static_ensemble/check_model_parallel_per_data_minimum_all1.py'
 outputname = 'static_ensemble'
 
-conda_name = 'AutoMLD'
+conda_name = 'GreenAutoMLD'
 
 parallelism = 1#20#15#multiprocessing.cpu_count()
 server = libtmux.Server()
