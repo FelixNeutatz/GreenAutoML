@@ -18,6 +18,7 @@ import openml
 import fastsklearnfeature.declarative_automl.optuna_package.myautoml.analysis.parallel.my_global_vars as mp_global
 from sklearn.metrics import balanced_accuracy_score
 from codecarbon import EmissionsTracker
+import traceback
 
 openml.config.apikey = '4384bd56dad8c3d2c0f6630c52ef5567'
 openml.config.cache_directory = '/home/neutatz/phd2/cache_openml'
@@ -89,7 +90,9 @@ for test_holdout_dataset_id in [args.dataset]:
                 result = balanced_accuracy_score(y_test_hold, y_hat_test)
 
                 new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values))
-            except:
+            except Exception as e:
+                print(str(e) + '\n\n')
+                traceback.print_exc()
                 result = 0
                 new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'shit happened', result, more='test'))
 
