@@ -9,9 +9,9 @@ with open('LICENSE') as f:
     license = f.read()
 
 setup(
-    name='declarativeautoml',
+    name='greenautoml',
     version='0.0.1',
-    description='Declarative AutoML',
+    description='GreenAutoML',
     long_description='description',
     author='Felix Neutatz',
     author_email='neutatz@gmail.com',

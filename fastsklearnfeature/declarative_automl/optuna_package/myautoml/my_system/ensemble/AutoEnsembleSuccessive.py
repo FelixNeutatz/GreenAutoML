@@ -129,8 +129,122 @@ def has_iterative_fit(p):
         invert_op = getattr(p.steps[-1][-1], "custom_iterative_fit", None)
         return type(invert_op) != type(None)
 
+
+def build_ensemble(return_dict, max_ensemble_models, model_store, dummy_result, key, pipeline_size_limit, training_time_limit, inference_time_limit, group_id, fairness_limit, X, y, y_test):
+    build_new_ensemble = True
+    if max_ensemble_models == len(model_store) and max_ensemble_models > 1:
+        min_accuracy = 1.0
+        min_key = None
+        for model_store_key, model_store_val in model_store.items():
+            if model_store_val[1] < min_accuracy:
+                min_accuracy = model_store_val[1]
+                min_key = model_store_key
+
+        if return_dict[key + 'result'] > min_accuracy:
+            del model_store[min_key]
+        else:
+            build_new_ensemble = False
+
+    if build_new_ensemble and return_dict[key + 'result'] > dummy_result and max_ensemble_models > 1:
+        model_store[key] = (
+        return_dict[key + 'pipeline'], return_dict[key + 'result'], return_dict[key + 'result' + '_training_time'],
+        return_dict[key + 'val_predictions'], return_dict[key + 'val_predictions_time'])
+
+    if build_new_ensemble and return_dict[key + 'result'] > dummy_result and max_ensemble_models > 1 and len(
+            model_store) > 0:
+        # sort based on accuracy
+        # train ensemble => check whether ensemble satisfies
+        my_keys = list(model_store.keys())
+        new_my_keys = []
+        for mk in my_keys:
+            if type(model_store[mk][3]) != type(None):
+                new_my_keys.append(mk)
+
+        #print('keys: ' + str(new_my_keys))
+
+        sorted_keys = np.array(sorted(new_my_keys))
+        accuracies_for_keys = np.array([model_store[run_key][1] for run_key in sorted_keys])
+
+        sorted_ids = np.argsort(accuracies_for_keys * -1)
+        desc_sorted_keys = sorted_keys[sorted_ids]
+        print('acc: ' + str(accuracies_for_keys[sorted_ids]))
+
+        ensemble_models = []
+        validation_predictions = []
+        calc_training_time = 0
+        for run_key in desc_sorted_keys:
+            new_ensemble_models = copy.deepcopy(ensemble_models)
+            new_ensemble_models.append(model_store[run_key][0])
+
+            # print('new_ensemble_models: ' + str(new_ensemble_models) + ' -> ' + str(len(new_ensemble_models)))
+            new_calc_training_time = copy.deepcopy(calc_training_time)
+            #print('training_time: ' + str(new_calc_training_time))
+            try:
+                validation_predictions_new = copy.deepcopy(validation_predictions)
+                validation_predictions_new.append(model_store[run_key][3])
+
+                new_calc_training_time += model_store[run_key][4]
+                new_calc_training_time += model_store[run_key][2]
+
+                if len(new_ensemble_models) > 1:
+                    if type(pipeline_size_limit) != type(None) or \
+                            type(training_time_limit) != type(None) or \
+                            type(inference_time_limit) != type(None) or \
+                            type(fairness_limit) != type(None) or \
+                            len(validation_predictions_new) == len(desc_sorted_keys):
+
+                        #TODO: check whether sum of model already succeeds
+
+                        start = time.time()
+                        ensemble_sel = EnsembleSelection(ensemble_size=len(validation_predictions_new),
+                                                         task_type=MULTICLASS_CLASSIFICATION,
+                                                         random_state=0,
+                                                         metric=ba)
+                        ensemble_sel.fit(validation_predictions_new, y_test, identifiers=None)
+                        print('weights: ' + str(ensemble_sel.weights_))
+                        ensemble_time = time.time() - start
+                        p_ensemble = EnsembleClassifier(models=new_ensemble_models, ensemble_selection=ensemble_sel)
+
+                        new_return_dict = {}
+                        if constraints_satisfied(p_ensemble,
+                                                 new_return_dict,
+                                                 key,
+                                                 new_calc_training_time + ensemble_time,
+                                                 training_time_limit,
+                                                 pipeline_size_limit,
+                                                 inference_time_limit,
+                                                 X,
+                                                 y,
+                                                 group_id,
+                                                 fairness_limit):
+                            ensemble_models = new_ensemble_models
+                            validation_predictions = validation_predictions_new
+                            calc_training_time = new_calc_training_time
+
+                            return_dict[key + 'ensemble'] = p_ensemble
+
+                            for k_return, val_return in new_return_dict.items():
+                                return_dict['ensemble_' + k_return] = val_return
+                        else:
+                            if not are_monotonic_constraints_satisfied(new_return_dict, key, training_time_limit,
+                                                                       pipeline_size_limit, inference_time_limit):
+                                return
+                    else:
+                        ensemble_models = new_ensemble_models
+                        validation_predictions = validation_predictions_new
+                        calc_training_time = new_calc_training_time
+                else:
+                    ensemble_models = new_ensemble_models
+                    validation_predictions = validation_predictions_new
+                    calc_training_time = new_calc_training_time
+
+            except Exception as e:
+                print(str(e) + '\n\n')
+                traceback.print_exc()
+
 def evaluatePipeline(key, return_dict):
     try:
+    #if True:
         p = return_dict['p']
         number_of_cvs = return_dict['number_of_cvs']
         cv = return_dict['cv']
@@ -149,6 +263,12 @@ def evaluatePipeline(key, return_dict):
         group_id = return_dict['fairness_group_id']
         use_incremental_data = return_dict['use_incremental_data']
         shuffle_validation = return_dict['shuffle_validation']
+        train_best_with_full_data = return_dict['train_best_with_full_data']
+
+        max_ensemble_models = return_dict['max_ensemble_models']
+        model_store = return_dict['model_store']
+
+        dummy_result = return_dict['dummy_result']
 
         trial = None
         if 'trial' in return_dict:
@@ -236,6 +356,15 @@ def evaluatePipeline(key, return_dict):
                         for k_return, val_return in new_return_dict.items():
                             return_dict[k_return] = val_return
 
+                        if max_ensemble_models > 1:
+                            start_inference_val_time = time.time()
+                            return_dict[key + 'val_predictions'] = p.predict_proba(X_test)
+                            return_dict[key + 'val_predictions_time'] = time.time() - start_inference_val_time
+
+                            build_ensemble(return_dict, max_ensemble_models, model_store, dummy_result, key,
+                                           pipeline_size_limit, training_time_limit, inference_time_limit, group_id,
+                                           fairness_limit, X, y, y_test)
+
                 if not key + 'pipeline' in return_dict:
                     if not key + 'result' in return_dict or return_dict[key + 'result'] < new_return_dict[key + 'result']:
                         for k_return, val_return in new_return_dict.items():
@@ -276,6 +405,15 @@ def evaluatePipeline(key, return_dict):
                             for k_return, val_return in new_return_dict.items():
                                 return_dict[k_return] = val_return
 
+                            if max_ensemble_models > 1:
+                                start_inference_val_time = time.time()
+                                return_dict[key + 'val_predictions'] = p.predict_proba(X_test)
+                                return_dict[key + 'val_predictions_time'] = time.time() - start_inference_val_time
+
+                                build_ensemble(return_dict, max_ensemble_models, model_store, dummy_result, key,
+                                               pipeline_size_limit, training_time_limit, inference_time_limit, group_id,
+                                               fairness_limit, X, y, y_test)
+
                     if not key + 'pipeline' in return_dict:
                         if not key + 'result' in return_dict or return_dict[key + 'result'] < new_return_dict[
                             key + 'result']:
@@ -305,6 +443,36 @@ def evaluatePipeline(key, return_dict):
 
             current_size_iter += 1
 
+
+        #check if current model is best so far
+        if train_best_with_full_data and key + 'result' in return_dict:
+            if return_dict[key + 'result'] > return_dict['study_best_value']:
+                print('retrain')
+                best_model_so_far = copy.deepcopy(return_dict[key + 'pipeline'])
+                start_training = time.time()
+                best_model_so_far.fit(X, y)
+                training_time = time.time() - start_training
+
+                new_return_dict = {}
+                if constraints_satisfied(p,
+                                         new_return_dict,
+                                         key,
+                                         training_time,
+                                         training_time_limit,
+                                         pipeline_size_limit,
+                                         inference_time_limit,
+                                         X,
+                                         y,
+                                         group_id,
+                                         fairness_limit):
+                    return_dict[key + 'pipeline'] = best_model_so_far
+
+                    for k_return, val_return in new_return_dict.items():
+                        return_dict[k_return] = val_return
+
+
+
+
     except Exception as e:
         print(str(e) + '\n\n')
         traceback.print_exc()
@@ -333,7 +501,8 @@ class MyAutoML:
                  fairness_group_id=None,
                  max_ensemble_models=50,
                  use_incremental_data=True,
-                 shuffle_validation=False
+                 shuffle_validation=False,
+                 train_best_with_full_data=False
                  ):
         self.cv = cv
         self.time_search_budget = time_search_budget
@@ -343,6 +512,7 @@ class MyAutoML:
         self.hold_out_fraction = hold_out_fraction
         self.use_incremental_data = use_incremental_data
         self.shuffle_validation = shuffle_validation
+        self.train_best_with_full_data = train_best_with_full_data
 
         self.classifier_list = myspace.classifier_list
         self.private_classifier_list = myspace.private_classifier_list
@@ -390,111 +560,16 @@ class MyAutoML:
 
 
     def predict(self, X):
-        best_pipeline = self.get_best_pipeline()
-        return best_pipeline.predict(X)
-
-
-    def ensemble(self, X_new, y_new):
-        validation_predictions = []
-
-        X = None
-        y = None
-        if self.sample_fraction < 1.0:
-            X, _, y, _ = sklearn.model_selection.train_test_split(X_new, y_new, random_state=42, stratify=y_new,
-                                                                  train_size=self.sample_fraction)
+        if type(None) == type(self.ensemble_store):
+            print('single_predict')
+            return self.get_best_pipeline().predict(X)
         else:
-            X = X_new
-            y = y_new
-
-        X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=42, stratify=y,
-                                                                                    test_size=self.hold_out_fraction)
-
-        sorted_keys = sorted(list(self.model_store.keys()))
-        for run_key in sorted_keys:
-            try:
-                validation_predictions.append(self.model_store[run_key][0].predict_proba(X_test))
-            except:
-                del self.model_store[run_key]
+            print('ensemble_predict')
+            return self.ensemble_store.predict(X)
 
 
-        #sort based on accuracy
-        #train ensemble => check whether ensemble satisfies
-        sorted_keys = np.array(sorted(list(self.model_store.keys())))
-        accuracies_for_keys = np.array([self.model_store[run_key][1] for run_key in sorted_keys])
 
-        sorted_ids = np.argsort(accuracies_for_keys * -1)
-        desc_sorted_keys = sorted_keys[sorted_ids]
-
-        single_best = (desc_sorted_keys[0], copy.deepcopy(self.model_store[desc_sorted_keys[0]]))
-
-        print('acc: ' + str(accuracies_for_keys[sorted_ids]))
-        ensemble_models = []
-        validation_predictions = []
-        calc_training_time = 0
-        self.run_key_order = []
-        for run_key in desc_sorted_keys:
-            print('actual: ' + str(self.run_key_order))
-            new_run_key_order = copy.deepcopy(self.run_key_order)
-            new_run_key_order.append(run_key)
-            new_ensemble_models = copy.deepcopy(ensemble_models)
-            new_ensemble_models.append(self.model_store[run_key][0])
-
-            new_calc_training_time = copy.deepcopy(calc_training_time)
-            print('training_time: ' + str(new_calc_training_time))
-            try:
-                start = time.time()
-                validation_predictions_new = copy.deepcopy(validation_predictions)
-                validation_predictions_new.append(self.model_store[run_key][0].predict_proba(X_test))
-                new_calc_training_time += time.time() - start
-
-                new_calc_training_time += self.model_store[run_key][2]
-
-                ensemble_time = 0
-                ensemble_sel = None
-                p_ensemble = None
-                if len(new_ensemble_models) > 1:
-                    start = time.time()
-                    ensemble_sel = EnsembleSelection(ensemble_size=len(validation_predictions_new),
-                                      task_type=MULTICLASS_CLASSIFICATION,
-                                      random_state=0,
-                                      metric=ba)
-                    ensemble_sel.fit(validation_predictions_new, y_test, identifiers=None)
-                    print('weights: ' + str(ensemble_sel.weights_))
-                    ensemble_time = time.time() - start
-                    p_ensemble = EnsembleClassifier(models=new_ensemble_models, ensemble_selection=ensemble_sel)
-                else:
-                    p_ensemble = self.model_store[run_key][0]
-
-                my_dict = {}
-                if constraints_satisfied(p_ensemble,
-                                             my_dict,
-                                             '',
-                                             new_calc_training_time + ensemble_time,
-                                             self.training_time_limit,
-                                             self.pipeline_size_limit,
-                                             self.inference_time_limit,
-                                             X_new,
-                                             y_new,
-                                             self.fairness_group_id,
-                                             self.fairness_limit):
-                    ensemble_models = new_ensemble_models
-                    validation_predictions = validation_predictions_new
-                    self.ensemble_selection = ensemble_sel
-                    self.run_key_order = new_run_key_order
-                    calc_training_time = new_calc_training_time
-                else:
-                    del self.model_store[run_key]
-
-
-            except Exception as e:
-                print(str(e) + '\n\n')
-                traceback.print_exc()
-                del self.model_store[run_key]
-
-        if type(self.ensemble_selection) == type(None):
-            self.run_key_order = [single_best[0]]
-            self.model_store[single_best[0]] = single_best[1]
-
+    '''
     def ensemble_predict(self, X_test):
         if type(self.ensemble_selection) == type(None):
             return self.model_store[self.run_key_order[0]][0].predict(X_test)
@@ -506,11 +581,13 @@ class MyAutoML:
             y_hat_test_temp = self.ensemble_selection.predict(np.array(test_predictions))
             y_hat_test_temp = np.argmax(y_hat_test_temp, axis=1)
             return y_hat_test_temp
+    '''
 
     def fit(self, X_new, y_new, sample_weight=None, categorical_indicator=None, scorer=None):
         self.start_fitting = time.time()
 
         self.model_store = {}
+        self.ensemble_store = None
 
         if self.sample_fraction < 1.0:
             X, _, y, _ = sklearn.model_selection.train_test_split(X_new, y_new, random_state=42, stratify=y_new, train_size=self.sample_fraction)
@@ -545,6 +622,10 @@ class MyAutoML:
             return_dict['fairness_group_id'] = self.fairness_group_id
             return_dict['use_incremental_data'] = False
             return_dict['shuffle_validation'] = False
+            return_dict['train_best_with_full_data'] = False
+            return_dict['model_store'] = {}
+            return_dict['max_ensemble_models'] = 1
+            return_dict['dummy_result'] = 0.0
 
             try:
                 return_dict['study_best_value'] = self.study.best_value
@@ -699,6 +780,10 @@ class MyAutoML:
                 return_dict['fairness_group_id'] = self.fairness_group_id
                 return_dict['use_incremental_data'] = self.use_incremental_data
                 return_dict['shuffle_validation'] = self.shuffle_validation
+                return_dict['train_best_with_full_data'] = self.train_best_with_full_data
+                return_dict['max_ensemble_models'] = self.max_ensemble_models
+                return_dict['model_store'] = self.model_store
+                return_dict['dummy_result'] = self.dummy_result
 
                 return_dict['trial'] = trial
 
@@ -746,6 +831,9 @@ class MyAutoML:
                 trial.set_user_attr('evaluation_time', time.time() - start_total)
                 trial.set_user_attr('time_since_start', time.time() - self.start_fitting)
 
+                if key + 'ensemble' in return_dict:
+                    self.ensemble_store = return_dict[key + 'ensemble']
+
                 if result > self.dummy_result:
                     if key + 'pipeline' in return_dict:
                         if len(self.model_store) >= self.max_ensemble_models:
@@ -762,12 +850,22 @@ class MyAutoML:
                             to_be_droped = self.max_ensemble_models
                             if result > run_accuracies[sorted_ids][self.max_ensemble_models - 1]:
                                 to_be_droped = self.max_ensemble_models - 1
-                                self.model_store[key] = (return_dict[key + 'pipeline'], result, training_time_current)
+                                val_predictions = None
+                                val_predictions_time = None
+                                if key + 'val_predictions' in return_dict:
+                                    val_predictions = return_dict[key + 'val_predictions']
+                                    val_predictions_time = return_dict[key + 'val_predictions_time']
+                                self.model_store[key] = (return_dict[key + 'pipeline'], result, training_time_current, val_predictions, val_predictions_time)
 
                             for drop_key in run_keys[sorted_ids][to_be_droped:]:
                                 del self.model_store[drop_key]
                         else:
-                            self.model_store[key] = (return_dict[key + 'pipeline'], result, training_time_current)
+                            val_predictions = None
+                            val_predictions_time = None
+                            if key + 'val_predictions' in return_dict:
+                                val_predictions = return_dict[key + 'val_predictions']
+                                val_predictions_time = return_dict[key + 'val_predictions_time']
+                            self.model_store[key] = (return_dict[key + 'pipeline'], result, training_time_current, val_predictions, val_predictions_time)
                         #print('size model store: ' + str(len(self.model_store)))
 
                 if self.use_incremental_data:
@@ -874,29 +972,29 @@ if __name__ == "__main__":
     '''
     single_perf = []
     ensemble_perf = []
-    for _ in range(10):
+    for _ in range(1):
         search = MyAutoML(n_jobs=1,
-                          time_search_budget=1*60*1,
+                          time_search_budget=3*60,
                           space=space,
                           main_memory_budget_gb=40,
                           hold_out_fraction=0.6,
-                          max_ensemble_models=1,
-                          evaluation_budget=2*60*0.1,
-                          use_incremental_data=False,
+                          max_ensemble_models=10,
+                          use_incremental_data=True,
                           #inference_time_limit=0.002
                           #training_time_limit=0.02
                           #pipeline_size_limit=10000
                           #fairness_limit=0.95,
                           #fairness_group_id=12,
-                          shuffle_validation=True,
-
+                          #shuffle_validation=True,
+                          #train_best_with_full_data=True,
                           )
 
         begin = time.time()
 
         best_result = search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=auc)
+        print('time: ' + str(time.time() - begin))
 
-        print(search.model_store)
+        #print(search.model_store)
 
         #from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import show_progress
 
@@ -910,8 +1008,8 @@ if __name__ == "__main__":
         single_perf.append(test_score)
 
 
-        search.ensemble(X_train, y_train)
-        y_hat_test = search.ensemble_predict(X_test)
+        #search.ensemble(X_train, y_train)
+        y_hat_test = search.predict(X_test)
         print(len(y_test))
         print(len(y_hat_test))
 

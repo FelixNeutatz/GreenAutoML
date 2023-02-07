@@ -69,6 +69,7 @@ private_classifier_list = [PrivateLogisticRegressionOptuna(), PrivateGaussianNBO
 
 #classifier_list = [RandomForestClassifierOptuna()]
 
+'''
 preprocessor_list = [             IdentityTransformation(),
 
                                   #Reduction
@@ -88,6 +89,9 @@ preprocessor_list = [             IdentityTransformation(),
                                   RBFSamplerOptuna(),
 
                      ]
+'''
+
+preprocessor_list = [IdentityTransformation()]
 
 #preprocessor_list = [IdentityTransformation()]
 
