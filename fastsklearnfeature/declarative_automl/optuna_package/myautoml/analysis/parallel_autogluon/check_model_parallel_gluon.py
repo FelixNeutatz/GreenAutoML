@@ -78,7 +78,7 @@ for test_holdout_dataset_id in [args.dataset]:
 
                 result = balanced_accuracy_score(y_test_hold, y_hat)
 
-                new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'test', result, more='test', tracker=tracker))
+                new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values))
             except Exception as e:
                 traceback.print_exc()
                 print(e)
