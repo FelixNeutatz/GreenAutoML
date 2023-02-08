@@ -179,8 +179,8 @@ def build_ensemble(return_dict, max_ensemble_models, model_store, dummy_result, 
             # print('new_ensemble_models: ' + str(new_ensemble_models) + ' -> ' + str(len(new_ensemble_models)))
             new_calc_training_time = copy.deepcopy(calc_training_time)
             #print('training_time: ' + str(new_calc_training_time))
-            #try:
-            if True:
+            try:
+            #if True:
                 validation_predictions_new = copy.deepcopy(validation_predictions)
                 validation_predictions_new.append(model_store[run_key][3])
 
@@ -239,13 +239,13 @@ def build_ensemble(return_dict, max_ensemble_models, model_store, dummy_result, 
                     validation_predictions = validation_predictions_new
                     calc_training_time = new_calc_training_time
 
-            #except Exception as e:
-            #    print(str(e) + '\n\n')
-            #    traceback.print_exc()
+            except Exception as e:
+                print(str(e) + '\n\n')
+                traceback.print_exc()
 
 def evaluatePipeline(key, return_dict):
-    #try:
-    if True:
+    try:
+    #if True:
         p = return_dict['p']
         number_of_cvs = return_dict['number_of_cvs']
         cv = return_dict['cv']
@@ -474,9 +474,9 @@ def evaluatePipeline(key, return_dict):
 
 
 
-    #except Exception as e:
-    #    print(str(e) + '\n\n')
-    #    traceback.print_exc()
+    except Exception as e:
+        print(str(e) + '\n\n')
+        traceback.print_exc()
 
 
 
