@@ -17,12 +17,12 @@ from fastsklearnfeature.declarative_automl.optuna_package.classifiers.LinearDisc
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.multiclass.OneVsRestClassifierOptuna import OneVsRestClassifierOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.categorical_encoding.LabelEncoderOptuna import LabelEncoderOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.categorical_encoding.OneHotEncoderOptuna import OneHotEncoderOptuna
+from fastsklearnfeature.declarative_automl.optuna_package.classifiers.TabPFNClassifierOptuna import TabPFNClassifierOptuna
 
 import pandas as pd
 import time
 import resource
 import copy
-import multiprocessing
 import fastsklearnfeature.declarative_automl.optuna_package.myautoml.define_space as myspace
 import pickle
 from dataclasses import dataclass
@@ -32,6 +32,13 @@ from autosklearn.ensembles.ensemble_selection import EnsembleSelection
 from autosklearn.metrics import balanced_accuracy as ba
 from autosklearn.constants import MULTICLASS_CLASSIFICATION
 import traceback
+import torch.multiprocessing
+torch.multiprocessing.set_sharing_strategy('file_system')
+from torch.multiprocessing import Pool, Process, set_start_method, Manager
+try:
+     set_start_method('spawn')
+except RuntimeError:
+    pass
 
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.my_system.ensemble.EnsembleClassifier import EnsembleClassifier
 from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing.MyIdentity import IdentityTransformation
@@ -167,7 +174,7 @@ def build_ensemble(return_dict, max_ensemble_models, model_store, dummy_result, 
 
         sorted_ids = np.argsort(accuracies_for_keys * -1)
         desc_sorted_keys = sorted_keys[sorted_ids]
-        print('acc: ' + str(accuracies_for_keys[sorted_ids]))
+        #print('acc: ' + str(accuracies_for_keys[sorted_ids]))
 
         ensemble_models = []
         validation_predictions = []
@@ -603,7 +610,7 @@ class MyAutoML:
             key = 'My_automl' + self.random_key + 'My_process' + str(time.time()) + "##" + str(
                 np.random.randint(0, 1000))
 
-            manager = multiprocessing.Manager()
+            manager = Manager()
             return_dict = manager.dict()
 
             return_dict['p'] = copy.deepcopy(my_pipeline)
@@ -637,7 +644,7 @@ class MyAutoML:
 
             remaining_time = np.min([self.evaluation_budget, self.time_search_budget - already_used_time])
 
-            my_process = multiprocessing.Process(target=evaluatePipeline, name='start' + key, args=(key, return_dict,))
+            my_process = Process(target=evaluatePipeline, name='start' + key, args=(key, return_dict,))
             my_process.start()
             my_process.join(int(remaining_time))
 
@@ -697,6 +704,7 @@ class MyAutoML:
                         isinstance(classifier, PrivateGaussianNBOptuna) or \
                         isinstance(classifier, MLPClassifierOptuna) or \
                         isinstance(classifier, LinearDiscriminantAnalysisOptuna) or \
+                        isinstance(classifier, TabPFNClassifierOptuna) or \
                         multi_class_support == 'one_vs_rest':
                     pass
                 else:
@@ -761,7 +769,7 @@ class MyAutoML:
 
                 key = 'My_automl' + self.random_key + 'My_process' + str(time.time()) + "##" + str(np.random.randint(0,1000))
 
-                manager = multiprocessing.Manager()
+                manager = Manager()
                 return_dict = manager.dict()
 
                 return_dict['p'] = copy.deepcopy(my_pipeline)
@@ -802,7 +810,7 @@ class MyAutoML:
                 remaining_time = np.min([self.evaluation_budget, self.time_search_budget - already_used_time])
 
 
-                my_process = multiprocessing.Process(target=evaluatePipeline, name='start'+key, args=(key, return_dict,))
+                my_process = Process(target=evaluatePipeline, name='start'+key, args=(key, return_dict,))
                 my_process.start()
                 my_process.join(int(remaining_time))
 
