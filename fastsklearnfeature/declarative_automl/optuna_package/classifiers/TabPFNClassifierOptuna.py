@@ -60,4 +60,4 @@ class TabPFNClassifierOptuna(TabPFNClassifier):
         return self.fit(X, y=y)
 
     def get_max_steps(self):
-        return 32
+        return 64
