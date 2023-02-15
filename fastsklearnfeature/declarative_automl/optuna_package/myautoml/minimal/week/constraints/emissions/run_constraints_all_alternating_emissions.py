@@ -55,7 +55,7 @@ def predict_range(model, X):
     return y_pred
 
 def run_AutoML(trial, my_scorer):
-    repetitions_count = 10
+    repetitions_count = 1#10
 
     space = trial.user_attrs['space']
 
@@ -284,7 +284,7 @@ def run_AutoML_global(my_trial, my_scorer):
             'group_l': dataset_name
             }#,trial_id_l': trial_id}
 
-def sample_and_evaluate(my_id1, starting_time_tt):
+def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer):
     if time.time() - starting_time_tt > 60*60*24*7:
         return -1
 
@@ -304,9 +304,9 @@ def sample_and_evaluate(my_id1, starting_time_tt):
             model_uncertainty = RandomForestRegressor(n_estimators=1000, random_state=my_id1, n_jobs=1)
             model_uncertainty.fit(X_meta, y_meta)
 
-            best_trial = get_best_trial(model_uncertainty)
+            best_trial = get_best_trial(model_uncertainty, total_search_time=total_search_time)
         else:
-            best_trial = get_best_random_trial()
+            best_trial = get_best_random_trial(total_search_time=total_search_time)
         features_of_sampled_point = best_trial.user_attrs['features']
 
         result = run_AutoML(best_trial, my_scorer)
@@ -418,7 +418,7 @@ if __name__ == "__main__":
 
     print(len(feature_names_new))
 
-    random_runs = (163)
+    random_runs = 10#(163)
 
 
 
@@ -548,11 +548,12 @@ if __name__ == "__main__":
 
 
     class Objective(object):
-        def __init__(self, model_uncertainty):
+        def __init__(self, model_uncertainty, total_search_time):
             self.model_uncertainty = model_uncertainty
+            self.total_search_time = total_search_time
 
         def __call__(self, trial):
-            features = sample_configuration(trial)
+            features = sample_configuration(trial, total_search_time=self.total_search_time)
             if type(features) == type(None):
                 return -1 * np.inf
 
@@ -566,27 +567,30 @@ if __name__ == "__main__":
             objective = uncertainty
             return objective
 
-    def get_best_trial(model_uncertainty):
+    def get_best_trial(model_uncertainty, total_search_time):
         sampler = TPESampler()
         study_uncertainty = optuna.create_study(direction='maximize', sampler=sampler)
-        my_objective = Objective(model_uncertainty)
+        my_objective = Objective(model_uncertainty, total_search_time=total_search_time)
         study_uncertainty.optimize(my_objective, n_trials=100, n_jobs=1)
         return study_uncertainty.best_trial
 
 
     class RandomObjective(object):
+        def __init__(self, total_search_time):
+            self.total_search_time = total_search_time
+
         def __call__(self, trial):
-            features = sample_configuration(trial)
+            features = sample_configuration(trial, total_search_time=self.total_search_time)
             if type(features) == type(None):
                 return -1 * np.inf
 
             return 1
 
-    def get_best_random_trial():
+    def get_best_random_trial(total_search_time):
         while True:
             sampler = RandomSampler()
             study_uncertainty = optuna.create_study(direction='maximize', sampler=sampler)
-            my_objective = RandomObjective()
+            my_objective = RandomObjective(total_search_time=total_search_time)
             study_uncertainty.optimize(my_objective, n_trials=1, n_jobs=1)
             if study_uncertainty.best_value > 0.0:
                 break
@@ -602,7 +606,7 @@ if __name__ == "__main__":
     dictionary['aquisition_function_value'] = aquisition_function_value
 
     with NestablePool(processes=topk) as pool:
-        results = pool.map(partial(sample_and_evaluate, starting_time_tt=starting_time_tt), range(100000))
+        results = pool.map(partial(sample_and_evaluate, starting_time_tt=starting_time_tt, total_search_time=total_search_time, my_scorer=my_scorer), range(100000))
 
     print('storing stuff')
 
