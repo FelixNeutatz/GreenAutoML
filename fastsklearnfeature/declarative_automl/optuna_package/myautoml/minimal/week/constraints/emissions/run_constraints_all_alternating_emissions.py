@@ -9,7 +9,6 @@ from anytree import RenderTree
 from sklearn.ensemble import RandomForestRegressor
 from optuna.samplers import RandomSampler
 import pickle
-import fastsklearnfeature.declarative_automl.optuna_package.myautoml.mp_global_vars as mp_glob
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.feature_transformation.FeatureTransformations import FeatureTransformations
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model_mine import get_data
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model_mine import data2features
@@ -26,6 +25,7 @@ import multiprocessing
 import sklearn
 from fastsklearnfeature.declarative_automl.fair_data.test import get_X_y_id
 import traceback
+from functools import partial
 
 class NoDaemonProcess(multiprocessing.Process):
     @property
@@ -54,7 +54,7 @@ def predict_range(model, X):
     y_pred = model.predict(X)
     return y_pred
 
-def run_AutoML(trial):
+def run_AutoML(trial, my_scorer):
     repetitions_count = 10
 
     space = trial.user_attrs['space']
@@ -144,7 +144,9 @@ def run_AutoML(trial):
         else:
             task_id = trial.params['dataset_id']
             X_train, X_test, y_train, y_test, categorical_indicator, attribute_names = get_data('data', randomstate=my_random_seed, task_id=task_id)
-    except:
+    except Exception as e:
+        print('Exception: ' + str(e) + '\n\n')
+        traceback.print_exc()
         return {'objective': 0.0}
 
     dynamic_params = []
@@ -193,12 +195,11 @@ def run_AutoML(trial):
         test_score = 0.0
         try:
             search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
-
-            search.ensemble(X_train, y_train)
-            y_hat_test = search.ensemble_predict(X_test)
+            y_hat_test = search.predict(X_test)
             test_score = balanced_accuracy_score(y_test, y_hat_test)
-        except:
-            pass
+        except Exception as e:
+            print('Exception: ' + str(e) + '\n\n')
+            traceback.print_exc()
         dynamic_params.append(test_score)
     dynamic_values = np.array(dynamic_params)
 
@@ -246,8 +247,7 @@ def run_AutoML(trial):
         try:
             best_result = search_static.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
 
-            search_static.ensemble(X_train, y_train)
-            y_hat_test = search_static.ensemble_predict(X_test)
+            y_hat_test = search_static.predict(X_test)
             test_score_default = balanced_accuracy_score(y_test, y_hat_test)
         except:
             test_score_default = 0.0
@@ -263,8 +263,8 @@ def run_AutoML(trial):
     return {'objective': frequency}
 
 
-def run_AutoML_global(my_trial):
-    comparison = run_AutoML(my_trial)['objective']
+def run_AutoML_global(my_trial, my_scorer):
+    comparison = run_AutoML(my_trial, my_scorer)['objective']
 
     # get all best validation scores and evaluate them
     feature_list = []
@@ -283,6 +283,74 @@ def run_AutoML_global(my_trial):
             'target_l': target_list,
             'group_l': dataset_name
             }#,trial_id_l': trial_id}
+
+def sample_and_evaluate(my_id1, starting_time_tt):
+    if time.time() - starting_time_tt > 60*60*24*7:
+        return -1
+
+    X_meta = copy.deepcopy(dictionary['X_meta'])
+    y_meta = copy.deepcopy(dictionary['y_meta'])
+
+    # how many are there
+    my_len = min(len(X_meta), len(y_meta))
+    X_meta = X_meta[0:my_len, :]
+    y_meta = y_meta[0:my_len]
+
+    #assert len(X_meta) == len(y_meta), 'len(X) != len(y)'
+
+    try:
+        best_trial = None
+        if np.random.choice([True, False]):
+            model_uncertainty = RandomForestRegressor(n_estimators=1000, random_state=my_id1, n_jobs=1)
+            model_uncertainty.fit(X_meta, y_meta)
+
+            best_trial = get_best_trial(model_uncertainty)
+        else:
+            best_trial = get_best_random_trial()
+        features_of_sampled_point = best_trial.user_attrs['features']
+
+        result = run_AutoML(best_trial, my_scorer)
+        actual_y = result['objective']
+    except Exception as e:
+        print('catched: ' + str(e))
+        return 0
+
+    my_lock.acquire()
+    try:
+        X_meta = dictionary['X_meta']
+        dictionary['X_meta'] = np.vstack((X_meta, features_of_sampled_point))
+
+        y_meta = dictionary['y_meta']
+        y_meta.append(actual_y)
+        dictionary['y_meta'] = y_meta
+
+        #assert len(X_meta) == len(y_meta), 'len(X) != len(y)'
+
+        group_meta = dictionary['group_meta']
+
+        dataset_name = ''
+        if 'dataset_id' in best_trial.params:
+            dataset_name = 'normal_' + str(best_trial.params['dataset_id'])
+        else:
+            dataset_name = 'fair_' + str(best_trial.params['dataset_id_fair'])
+
+        group_meta.append(dataset_name)
+        dictionary['group_meta'] = group_meta
+
+        #assert len(X_meta) == len(group_meta), 'len(X) != len(group)'
+
+        aquisition_function_value = dictionary['aquisition_function_value']
+        aquisition_function_value.append(best_trial.value)
+        dictionary['aquisition_function_value'] = aquisition_function_value
+
+        #assert len(X_meta) == len(aquisition_function_value), 'len(X) != len(acquisition)'
+    except Exception as e:
+        print('catched: ' + str(e))
+    finally:
+        my_lock.release()
+
+    return 0
+
 
 if __name__ == "__main__":
 
@@ -315,7 +383,7 @@ if __name__ == "__main__":
     my_scorer = make_scorer(balanced_accuracy_score)
 
 
-    mp_glob.total_search_time = 5*60#60
+    total_search_time = 5*60#60
     topk = 20#26 # 20
     continue_from_checkpoint = False
 
@@ -362,7 +430,7 @@ if __name__ == "__main__":
         return np.std(np.append(min_elements, max_elements))
 
 
-    def sample_configuration(trial):
+    def sample_configuration(trial, total_search_time):
         try:
             gen = SpaceGenerator()
             space = gen.generate_params()
@@ -371,7 +439,7 @@ if __name__ == "__main__":
             trial.set_user_attr('space', copy.deepcopy(space))
 
             search_time, evaluation_time, memory_limit, privacy_limit, training_time_limit, inference_time_limit, pipeline_size_limit, cv, number_of_cvs, hold_out_fraction, sample_fraction, task_id, fairness_limit, use_ensemble, use_incremental_data, shuffle_validation, train_best_with_full_data, consumed_energy_limit = generate_parameters_minimal_sample_constraints_all_emissions(
-                trial, mp_glob.total_search_time, my_openml_tasks, my_openml_tasks_fair,
+                trial, total_search_time, my_openml_tasks, my_openml_tasks_fair,
                 use_training_time_constraint=False,
                 use_inference_time_constraint=False,
                 use_pipeline_size_constraint=False,
@@ -423,8 +491,8 @@ if __name__ == "__main__":
             return None
         return features
 
-    def random_config(trial):
-        features = sample_configuration(trial)
+    def random_config(trial, total_search_time):
+        features = sample_configuration(trial, total_search_time)
         if type(features) == type(None):
             return -1 * np.inf
         return 0.0
@@ -455,19 +523,19 @@ if __name__ == "__main__":
     else:
         #cold start - random sampling
         study_random = optuna.create_study(direction='maximize', sampler=RandomSampler(seed=42))
-        study_random.optimize(random_config, n_trials=random_runs, n_jobs=1)
+        study_random.optimize(partial(random_config, total_search_time=total_search_time), n_trials=random_runs, n_jobs=1)
 
-        mp_glob.my_trials = []
+        my_trials = []
         trial_id2aqval = {}
         counter_trial_id = 0
         for u_trial in study_random.trials:
             if u_trial.value == 0.0: #prune failed configurations
-                mp_glob.my_trials.append(u_trial)
+                my_trials.append(u_trial)
                 trial_id2aqval[counter_trial_id] = 0.0
                 counter_trial_id += 1
 
         with NestablePool(processes=topk) as pool:
-            results = pool.map(run_AutoML_global, mp_glob.my_trials)
+            results = pool.map(partial(run_AutoML_global, my_scorer=my_scorer), my_trials)
 
         for result_p in results:
             for f_progress in range(len(result_p['feature_l'])):
@@ -524,72 +592,7 @@ if __name__ == "__main__":
                 break
         return study_uncertainty.best_trial
 
-    def sample_and_evaluate(my_id1):
-        if time.time() - starting_time_tt > 60*60*24*7:
-            return -1
 
-        X_meta = copy.deepcopy(dictionary['X_meta'])
-        y_meta = copy.deepcopy(dictionary['y_meta'])
-
-        # how many are there
-        my_len = min(len(X_meta), len(y_meta))
-        X_meta = X_meta[0:my_len, :]
-        y_meta = y_meta[0:my_len]
-
-        #assert len(X_meta) == len(y_meta), 'len(X) != len(y)'
-
-        try:
-            best_trial = None
-            if np.random.choice([True, False]):
-                model_uncertainty = RandomForestRegressor(n_estimators=1000, random_state=my_id1, n_jobs=1)
-                model_uncertainty.fit(X_meta, y_meta)
-
-                best_trial = get_best_trial(model_uncertainty)
-            else:
-                best_trial = get_best_random_trial()
-            features_of_sampled_point = best_trial.user_attrs['features']
-
-            result = run_AutoML(best_trial)
-            actual_y = result['objective']
-        except Exception as e:
-            print('catched: ' + str(e))
-            return 0
-
-        my_lock.acquire()
-        try:
-            X_meta = dictionary['X_meta']
-            dictionary['X_meta'] = np.vstack((X_meta, features_of_sampled_point))
-
-            y_meta = dictionary['y_meta']
-            y_meta.append(actual_y)
-            dictionary['y_meta'] = y_meta
-
-            #assert len(X_meta) == len(y_meta), 'len(X) != len(y)'
-
-            group_meta = dictionary['group_meta']
-
-            dataset_name = ''
-            if 'dataset_id' in best_trial.params:
-                dataset_name = 'normal_' + str(best_trial.params['dataset_id'])
-            else:
-                dataset_name = 'fair_' + str(best_trial.params['dataset_id_fair'])
-
-            group_meta.append(dataset_name)
-            dictionary['group_meta'] = group_meta
-
-            #assert len(X_meta) == len(group_meta), 'len(X) != len(group)'
-
-            aquisition_function_value = dictionary['aquisition_function_value']
-            aquisition_function_value.append(best_trial.value)
-            dictionary['aquisition_function_value'] = aquisition_function_value
-
-            #assert len(X_meta) == len(aquisition_function_value), 'len(X) != len(acquisition)'
-        except Exception as e:
-            print('catched: ' + str(e))
-        finally:
-            my_lock.release()
-
-        return 0
 
     assert len(X_meta) == len(y_meta)
 
@@ -599,7 +602,7 @@ if __name__ == "__main__":
     dictionary['aquisition_function_value'] = aquisition_function_value
 
     with NestablePool(processes=topk) as pool:
-        results = pool.map(sample_and_evaluate, range(100000))
+        results = pool.map(partial(sample_and_evaluate, starting_time_tt=starting_time_tt), range(100000))
 
     print('storing stuff')
 
