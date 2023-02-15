@@ -284,7 +284,7 @@ def run_AutoML_global(my_trial, my_scorer):
             'group_l': dataset_name
             }#,trial_id_l': trial_id}
 
-def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer):
+def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer, dictionary):
     if time.time() - starting_time_tt > 60*60*24*7:
         return -1
 
@@ -338,12 +338,6 @@ def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer):
         dictionary['group_meta'] = group_meta
 
         #assert len(X_meta) == len(group_meta), 'len(X) != len(group)'
-
-        aquisition_function_value = dictionary['aquisition_function_value']
-        aquisition_function_value.append(best_trial.value)
-        dictionary['aquisition_function_value'] = aquisition_function_value
-
-        #assert len(X_meta) == len(aquisition_function_value), 'len(X) != len(acquisition)'
     except Exception as e:
         print('catched: ' + str(e))
     finally:
@@ -418,7 +412,7 @@ if __name__ == "__main__":
 
     print(len(feature_names_new))
 
-    random_runs = 10#(163)
+    random_runs = 3#(163)
 
 
 
@@ -501,7 +495,6 @@ if __name__ == "__main__":
     X_meta = np.empty((0, len(feature_names_new)), dtype=float)
     y_meta = []
     group_meta = []
-    aquisition_function_value = []
 
 
     #path2files = '/home/neutatz/phd2/decAutoML2weeks_compare2default/single_cpu_machine1_4D_start_and_class_imbalance'
@@ -517,9 +510,6 @@ if __name__ == "__main__":
 
         with open(path2files + '/felix_group_compare_scaled.p', 'rb') as handle:
             group_meta = pickle.load(handle)
-
-        with open(path2files + '/felix_acquisition function value_scaled.p', 'rb') as handle:
-            aquisition_function_value = pickle.load(handle)
     else:
         #cold start - random sampling
         study_random = optuna.create_study(direction='maximize', sampler=RandomSampler(seed=42))
@@ -542,7 +532,6 @@ if __name__ == "__main__":
                 X_meta = np.vstack((X_meta, result_p['feature_l'][f_progress]))
                 y_meta.append(result_p['target_l'][f_progress])
                 group_meta.append(result_p['group_l'])
-                #aquisition_function_value.append(trial_id2aqval[result_p['trial_id_l']])
 
         print('done')
 
@@ -603,10 +592,9 @@ if __name__ == "__main__":
     dictionary['X_meta'] = X_meta
     dictionary['y_meta'] = y_meta
     dictionary['group_meta'] = group_meta
-    dictionary['aquisition_function_value'] = aquisition_function_value
 
     with NestablePool(processes=topk) as pool:
-        results = pool.map(partial(sample_and_evaluate, starting_time_tt=starting_time_tt, total_search_time=total_search_time, my_scorer=my_scorer), range(100000))
+        results = pool.map(partial(sample_and_evaluate, starting_time_tt=starting_time_tt, total_search_time=total_search_time, my_scorer=my_scorer, dictionary=dictionary), range(100000))
 
     print('storing stuff')
 
@@ -625,5 +613,3 @@ if __name__ == "__main__":
     with open('/home/neutatz/data/my_temp/felix_group_compare_scaled.p', "wb") as pickle_model_file:
         pickle.dump(dictionary['group_meta'], pickle_model_file)
 
-    with open('/home/neutatz/data/my_temp/felix_acquisition function value_scaled.p', "wb") as pickle_model_file:
-        pickle.dump(dictionary['aquisition_function_value'], pickle_model_file)
