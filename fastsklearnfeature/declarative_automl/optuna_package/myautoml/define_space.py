@@ -49,7 +49,7 @@ from fastsklearnfeature.declarative_automl.optuna_package.augmentation.SMOTEOptu
 from fastsklearnfeature.declarative_automl.optuna_package.augmentation.ADASYNOptuna import ADASYNOptuna
 
 classifier_list = [RandomForestClassifierOptuna(),
-                   TabPFNClassifierOptuna(),
+                                TabPFNClassifierOptuna(),
                                 AdaBoostClassifierOptuna(),
                                 BernoulliNBOptuna(),
                                 DecisionTreeClassifierOptuna(),

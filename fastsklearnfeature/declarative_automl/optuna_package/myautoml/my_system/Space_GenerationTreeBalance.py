@@ -2,7 +2,7 @@ import fastsklearnfeature.declarative_automl.optuna_package.myautoml.define_spac
 
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.my_system.MyAutoMLTreeSpace import MyAutoMLSpace
 from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.SimpleImputerOptuna import SimpleImputerOptuna
-
+#from fastsklearnfeature.declarative_automl.optuna_package.bagging.BaggingFeaturesOptuna import BaggingFeaturesOptuna
 
 
 
@@ -58,6 +58,10 @@ class SpaceGenerator:
 
         imputer = SimpleImputerOptuna()
         imputer.generate_hyperparameters(self.space)
+
+        #use_bagging_p = self.space.generate_cat('use_bagging', [True, False], False)
+        #bagging = BaggingFeaturesOptuna()
+        #bagging.generate_hyperparameters(self.space, depending_node=use_bagging_p[0])
 
         category_categorical_encoding = self.space.generate_cat('categorical_encoding', self.categorical_encoding_list, self.categorical_encoding_list[0])
         for cat_i in range(len(self.categorical_encoding_list)):

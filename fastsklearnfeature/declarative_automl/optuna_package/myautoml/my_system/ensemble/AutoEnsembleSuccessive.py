@@ -18,6 +18,8 @@ from fastsklearnfeature.declarative_automl.optuna_package.classifiers.multiclass
 from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.categorical_encoding.LabelEncoderOptuna import LabelEncoderOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.categorical_encoding.OneHotEncoderOptuna import OneHotEncoderOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.TabPFNClassifierOptuna import TabPFNClassifierOptuna
+#from fastsklearnfeature.declarative_automl.optuna_package.bagging.BaggingFeaturesOptuna import BaggingFeaturesOptuna
+from codecarbon import EmissionsTracker
 
 import pandas as pd
 import time
@@ -68,6 +70,18 @@ class StopWhenOptimumReachedCallback:
 
     def __call__(self, study, trial):
         if study.best_value == self.optimum:
+            study.stop()
+
+@dataclass
+class StopWhenEnergyReachedCallback:
+    consumed_energy_limit: float
+    tracker: EmissionsTracker
+
+    def __call__(self, study, trial):
+
+        self.tracker._measure_power_and_energy()
+        emissions_data = self.tracker._prepare_emissions_data()
+        if emissions_data.energy_consumed > self.consumed_energy_limit:
             study.stop()
 
 class TimeException(Exception):
@@ -266,6 +280,10 @@ def evaluatePipeline(key, return_dict):
         training_time_limit = return_dict['training_time_limit']
         inference_time_limit = return_dict['inference_time_limit']
         pipeline_size_limit = return_dict['pipeline_size_limit']
+
+        #consumed_energy_limit = return_dict['consumed_energy_limit']
+        #tracker = return_dict['tracker']
+
         adversarial_robustness_constraint = return_dict['adversarial_robustness_constraint']
         fairness_limit = return_dict['fairness_limit']
         group_id = return_dict['fairness_group_id']
@@ -315,6 +333,15 @@ def evaluatePipeline(key, return_dict):
 
         while not full_size_reached:
             print('current: ' + str(current_size))
+
+            '''
+            if type(None) != type(consumed_energy_limit):
+                tracker._measure_power_and_energy()
+                emissions_data = tracker._prepare_emissions_data()
+                if emissions_data.energy_consumed > consumed_energy_limit:
+                    return
+            '''
+
 
             if current_size < len(X_train_big):
                 X_train, _, y_train, _ = my_train_test_split(X_train_big, y_train_big, random_state=42, train_size=current_size)
@@ -510,7 +537,8 @@ class MyAutoML:
                  max_ensemble_models=50,
                  use_incremental_data=True,
                  shuffle_validation=False,
-                 train_best_with_full_data=False
+                 train_best_with_full_data=False,
+                 consumed_energy_limit=None
                  ):
         self.cv = cv
         self.time_search_budget = time_search_budget
@@ -544,6 +572,12 @@ class MyAutoML:
         self.training_time_limit = training_time_limit
         self.inference_time_limit = inference_time_limit
         self.pipeline_size_limit = pipeline_size_limit
+        self.consumed_energy_limit = consumed_energy_limit
+        self.tracker = None
+        if type(None) != type(self.consumed_energy_limit):
+            self.tracker = EmissionsTracker()
+
+
         self.adversarial_robustness_constraint = adversarial_robustness_constraint
 
         self.random_key = str(time.time()) + '-' + str(np.random.randint(0, 1000))
@@ -594,6 +628,9 @@ class MyAutoML:
     def fit(self, X_new, y_new, sample_weight=None, categorical_indicator=None, scorer=None):
         self.start_fitting = time.time()
 
+        if type(None) != type(self.consumed_energy_limit):
+            self.tracker.start()
+
         self.model_store = {}
         self.ensemble_store = None
 
@@ -625,6 +662,8 @@ class MyAutoML:
             return_dict['training_time_limit'] = self.training_time_limit
             return_dict['inference_time_limit'] = self.inference_time_limit
             return_dict['pipeline_size_limit'] = self.pipeline_size_limit
+            #return_dict['consumed_energy_limit'] = self.consumed_energy_limit
+            #return_dict['tracker'] = self.tracker
             return_dict['adversarial_robustness_constraint'] = self.adversarial_robustness_constraint
             return_dict['fairness_limit'] = self.fairness_limit
             return_dict['fairness_group_id'] = self.fairness_group_id
@@ -760,8 +799,14 @@ class MyAutoML:
 
                 #multiclass_classifier = OneVsRestClassifierOptuna(estimator=classifier, n_jobs=1)
 
+                bagging = IdentityTransformation()
+                '''
+                if self.space.suggest_categorical('use_bagging', [True, False]):
+                    bagging = BaggingFeaturesOptuna()
+                    bagging.init_hyperparameters(self.space, X, y)
+                '''
 
-                my_pipeline = Pipeline([('data_preprocessing', data_preprocessor), ('preprocessing', preprocessor), ('augmentation', augmentation),
+                my_pipeline = Pipeline([('data_preprocessing', data_preprocessor), ('preprocessing', preprocessor), ('bagging', bagging), ('augmentation', augmentation),
                               ('classifier', multiclass_classifier)])
 
                 #my_pipeline = Pipeline([('data_preprocessing', data_preprocessor), ('preprocessing', preprocessor),
@@ -784,6 +829,8 @@ class MyAutoML:
                 return_dict['training_time_limit'] = self.training_time_limit
                 return_dict['inference_time_limit'] = self.inference_time_limit
                 return_dict['pipeline_size_limit'] = self.pipeline_size_limit
+                #return_dict['consumed_energy_limit'] = self.consumed_energy_limit
+                #return_dict['tracker'] = self.tracker
                 return_dict['adversarial_robustness_constraint'] = self.adversarial_robustness_constraint
                 return_dict['fairness_limit'] = self.fairness_limit
                 return_dict['fairness_group_id'] = self.fairness_group_id
@@ -806,6 +853,12 @@ class MyAutoML:
                 if already_used_time + 2 >= self.time_search_budget:  # already over budget
                     time.sleep(2)
                     return -1 * np.inf
+
+                if type(None) != type(self.consumed_energy_limit):
+                    self.tracker._measure_power_and_energy()
+                    emissions_data = self.tracker._prepare_emissions_data()
+                    if emissions_data.energy_consumed > self.consumed_energy_limit:
+                        return -1 * np.inf
 
                 remaining_time = np.min([self.evaluation_budget, self.time_search_budget - already_used_time])
 
@@ -906,11 +959,21 @@ class MyAutoML:
             self.study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(
                                 n_startup_trials=3, n_warmup_steps=0, interval_steps=1
                             ))
+
+        callbacks = []
+        if self.max_ensemble_models == 1:
+            callbacks.append(StopWhenOptimumReachedCallback(1.0))
+        if type(None) != type(self.consumed_energy_limit):
+            callbacks.append(StopWhenEnergyReachedCallback(self.consumed_energy_limit, self.tracker))
+
         self.study.optimize(objective1, timeout=self.time_search_budget,
                             n_jobs=self.n_jobs,
                             catch=(TimeException,),
-                            callbacks=[StopWhenOptimumReachedCallback(1.0)],
+                            callbacks=callbacks,
                             ) # todo: check for scorer to know what is the optimum
+
+        if type(None) != type(self.consumed_energy_limit):
+            self.tracker.stop()
 
         return self.study.best_value
 
@@ -932,6 +995,9 @@ if __name__ == "__main__":
     #dataset = openml.datasets.get_dataset(41167)
     #dataset = openml.datasets.get_dataset(41147)
     #dataset = openml.datasets.get_dataset(1596)
+    #41167
+
+    #dataset = openml.datasets.get_dataset(41167)
 
     X, y, categorical_indicator, attribute_names = dataset.get_data(
         dataset_format='array',
@@ -983,25 +1049,27 @@ if __name__ == "__main__":
     ensemble_perf = []
     for _ in range(1):
         search = MyAutoML(n_jobs=1,
-                          time_search_budget=3*60,
+                          time_search_budget=10,
                           space=space,
                           main_memory_budget_gb=40,
                           hold_out_fraction=0.6,
-                          max_ensemble_models=10,
+                          max_ensemble_models=1,
                           use_incremental_data=True,
                           #inference_time_limit=0.002
                           #training_time_limit=0.02
                           #pipeline_size_limit=10000
                           #fairness_limit=0.95,
                           #fairness_group_id=12,
-                          #shuffle_validation=True,
+                          shuffle_validation=True,
                           #train_best_with_full_data=True,
+                          consumed_energy_limit=0.0001
                           )
 
         begin = time.time()
 
         best_result = search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=auc)
         print('time: ' + str(time.time() - begin))
+        print('energy: ' + str(search.tracker.final_emissions_data.energy_consumed))
 
         #print(search.model_store)
 
