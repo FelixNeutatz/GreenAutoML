@@ -395,6 +395,79 @@ def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer, 
 
     return 0
 
+    def calculate_max_std(N, min_value=0, max_value=1):
+        max_elements = np.ones(int(N / 2)) * max_value
+        min_elements = np.ones(int(N / 2)) * min_value
+        return np.std(np.append(min_elements, max_elements))
+
+
+def sample_configuration(trial, total_search_time):
+    try:
+        gen = SpaceGenerator()
+        space = gen.generate_params()
+        space.sample_parameters(trial) # no tuning of the space
+
+        trial.set_user_attr('space', copy.deepcopy(space))
+
+        search_time, evaluation_time, memory_limit, privacy_limit, training_time_limit, inference_time_limit, pipeline_size_limit, cv, number_of_cvs, hold_out_fraction, sample_fraction, task_id, fairness_limit, use_ensemble, use_incremental_data, shuffle_validation, train_best_with_full_data, consumed_energy_limit = generate_parameters_minimal_sample_constraints_all_emissions(
+            trial, total_search_time, my_openml_tasks, my_openml_tasks_fair,
+            use_training_time_constraint=False,
+            use_inference_time_constraint=False,
+            use_pipeline_size_constraint=False,
+            use_fairness_constraint=False,
+            use_emission_constraint=True)
+
+        my_random_seed = int(time.time())
+
+        if fairness_limit > 0.0:
+            X, y, sensitive_attribute_id, categorical_indicator = get_X_y_id(key=task_id)
+            X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X,
+                                                                                        y,
+                                                                                        random_state=my_random_seed,
+                                                                                        stratify=y,
+                                                                                        train_size=0.66)
+
+        else:
+            X_train, X_test, y_train, y_test, categorical_indicator, attribute_names = get_data('data', randomstate=my_random_seed, task_id=task_id)
+
+        trial.set_user_attr('data_random_seed', my_random_seed)
+
+        # add metafeatures of data
+        my_list_constraints_values = [search_time,
+                                      evaluation_time,
+                                      memory_limit,
+                                      cv,
+                                      number_of_cvs,
+                                      ifNull(privacy_limit, constant_value=1000),
+                                      ifNull(hold_out_fraction),
+                                      sample_fraction,
+                                      training_time_limit,
+                                      inference_time_limit,
+                                      pipeline_size_limit,
+                                      fairness_limit,
+                                      int(use_ensemble),
+                                      int(use_incremental_data),
+                                      int(shuffle_validation),
+                                      int(train_best_with_full_data),
+                                      consumed_energy_limit
+                                      ]
+
+        metafeature_values = data2features(X_train, y_train, categorical_indicator)
+        features = space2features(space, my_list_constraints_values, metafeature_values)
+        features = FeatureTransformations().fit(features).transform(features, feature_names=feature_names)
+
+        trial.set_user_attr('features', features)
+    except:
+        traceback.print_exc()
+        return None
+    return features
+
+def random_config(trial, total_search_time):
+    features = sample_configuration(trial, total_search_time)
+    if type(features) == type(None):
+        return -1 * np.inf
+    return 0.0
+
 
 if __name__ == "__main__":
 
@@ -464,82 +537,6 @@ if __name__ == "__main__":
 
     random_runs = 3#(163)
 
-
-
-
-
-    def calculate_max_std(N, min_value=0, max_value=1):
-        max_elements = np.ones(int(N / 2)) * max_value
-        min_elements = np.ones(int(N / 2)) * min_value
-        return np.std(np.append(min_elements, max_elements))
-
-
-    def sample_configuration(trial, total_search_time):
-        try:
-            gen = SpaceGenerator()
-            space = gen.generate_params()
-            space.sample_parameters(trial) # no tuning of the space
-
-            trial.set_user_attr('space', copy.deepcopy(space))
-
-            search_time, evaluation_time, memory_limit, privacy_limit, training_time_limit, inference_time_limit, pipeline_size_limit, cv, number_of_cvs, hold_out_fraction, sample_fraction, task_id, fairness_limit, use_ensemble, use_incremental_data, shuffle_validation, train_best_with_full_data, consumed_energy_limit = generate_parameters_minimal_sample_constraints_all_emissions(
-                trial, total_search_time, my_openml_tasks, my_openml_tasks_fair,
-                use_training_time_constraint=False,
-                use_inference_time_constraint=False,
-                use_pipeline_size_constraint=False,
-                use_fairness_constraint=False,
-                use_emission_constraint=True)
-
-            my_random_seed = int(time.time())
-
-            if fairness_limit > 0.0:
-                X, y, sensitive_attribute_id, categorical_indicator = get_X_y_id(key=task_id)
-                X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X,
-                                                                                            y,
-                                                                                            random_state=my_random_seed,
-                                                                                            stratify=y,
-                                                                                            train_size=0.66)
-
-            else:
-                X_train, X_test, y_train, y_test, categorical_indicator, attribute_names = get_data('data', randomstate=my_random_seed, task_id=task_id)
-
-            trial.set_user_attr('data_random_seed', my_random_seed)
-
-            # add metafeatures of data
-            my_list_constraints_values = [search_time,
-                                          evaluation_time,
-                                          memory_limit,
-                                          cv,
-                                          number_of_cvs,
-                                          ifNull(privacy_limit, constant_value=1000),
-                                          ifNull(hold_out_fraction),
-                                          sample_fraction,
-                                          training_time_limit,
-                                          inference_time_limit,
-                                          pipeline_size_limit,
-                                          fairness_limit,
-                                          int(use_ensemble),
-                                          int(use_incremental_data),
-                                          int(shuffle_validation),
-                                          int(train_best_with_full_data),
-                                          consumed_energy_limit
-                                          ]
-
-            metafeature_values = data2features(X_train, y_train, categorical_indicator)
-            features = space2features(space, my_list_constraints_values, metafeature_values)
-            features = FeatureTransformations().fit(features).transform(features, feature_names=feature_names)
-
-            trial.set_user_attr('features', features)
-        except:
-            traceback.print_exc()
-            return None
-        return features
-
-    def random_config(trial, total_search_time):
-        features = sample_configuration(trial, total_search_time)
-        if type(features) == type(None):
-            return -1 * np.inf
-        return 0.0
 
 
     X_meta = np.empty((0, len(feature_names_new)), dtype=float)
