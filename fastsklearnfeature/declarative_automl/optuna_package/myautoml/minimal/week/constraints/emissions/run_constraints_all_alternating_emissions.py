@@ -55,7 +55,7 @@ def predict_range(model, X):
     return y_pred
 
 def run_AutoML(trial, my_scorer):
-    repetitions_count = 1#10
+    repetitions_count = 10
 
     space = trial.user_attrs['space']
 
@@ -564,7 +564,7 @@ if __name__ == "__main__":
 
     print(len(feature_names_new))
 
-    random_runs = 3#(163)
+    random_runs = (163)
 
 
 
@@ -630,7 +630,7 @@ if __name__ == "__main__":
                                    dictionary=dictionary,
                                    my_openml_tasks=my_openml_tasks,
                                    my_openml_tasks_fair=my_openml_tasks_fair,
-                                   feature_names=feature_names), range(2))#100000
+                                   feature_names=feature_names), range(100000))
 
     print('storing stuff')
 
