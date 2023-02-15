@@ -263,26 +263,26 @@ def run_AutoML(trial):
     return {'objective': frequency}
 
 
-def run_AutoML_global(trial_id):
-    comparison = run_AutoML(mp_glob.my_trials[trial_id])['objective']
+def run_AutoML_global(my_trial):
+    comparison = run_AutoML(my_trial)['objective']
 
     # get all best validation scores and evaluate them
     feature_list = []
     target_list = []
 
-    feature_list.append(copy.deepcopy(mp_glob.my_trials[trial_id].user_attrs['features']))
+    feature_list.append(copy.deepcopy(my_trial.user_attrs['features']))
     target_list.append(comparison)
 
     dataset_name = ''
-    if 'dataset_id' in mp_glob.my_trials[trial_id].params:
-        dataset_name = 'normal_' + str(mp_glob.my_trials[trial_id].params['dataset_id'])
+    if 'dataset_id' in my_trial.params:
+        dataset_name = 'normal_' + str(my_trial.params['dataset_id'])
     else:
-        dataset_name = 'fair_' + str(mp_glob.my_trials[trial_id].params['dataset_id_fair'])
+        dataset_name = 'fair_' + str(my_trial.params['dataset_id_fair'])
 
     return {'feature_l': feature_list,
             'target_l': target_list,
-            'group_l': dataset_name,
-            'trial_id_l': trial_id}
+            'group_l': dataset_name
+            }#,trial_id_l': trial_id}
 
 if __name__ == "__main__":
 
@@ -467,14 +467,14 @@ if __name__ == "__main__":
                 counter_trial_id += 1
 
         with NestablePool(processes=topk) as pool:
-            results = pool.map(run_AutoML_global, range(len(mp_glob.my_trials)))
+            results = pool.map(run_AutoML_global, mp_glob.my_trials)
 
         for result_p in results:
             for f_progress in range(len(result_p['feature_l'])):
                 X_meta = np.vstack((X_meta, result_p['feature_l'][f_progress]))
                 y_meta.append(result_p['target_l'][f_progress])
                 group_meta.append(result_p['group_l'])
-                aquisition_function_value.append(trial_id2aqval[result_p['trial_id_l']])
+                #aquisition_function_value.append(trial_id2aqval[result_p['trial_id_l']])
 
         print('done')
 
