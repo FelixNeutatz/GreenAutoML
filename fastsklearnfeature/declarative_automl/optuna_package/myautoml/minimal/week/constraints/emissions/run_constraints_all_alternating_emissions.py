@@ -355,7 +355,7 @@ def get_best_random_trial(total_search_time, my_openml_tasks, my_openml_tasks_fa
             break
     return study_uncertainty.best_trial
 
-def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer, dictionary, my_openml_tasks, my_openml_tasks_fair, feature_names, my_lock):
+def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer, dictionary, my_openml_tasks, my_openml_tasks_fair, feature_names):
     if time.time() - starting_time_tt > 60*60*24*7:
         return -1
 
@@ -630,8 +630,7 @@ if __name__ == "__main__":
                                    dictionary=dictionary,
                                    my_openml_tasks=my_openml_tasks,
                                    my_openml_tasks_fair=my_openml_tasks_fair,
-                                   feature_names=feature_names,
-                                   my_lock=my_lock), range(2))#100000
+                                   feature_names=feature_names), range(2))#100000
 
     print('storing stuff')
 
