@@ -490,6 +490,13 @@ def random_config(trial, total_search_time, my_openml_tasks, my_openml_tasks_fai
         return -1 * np.inf
     return 0.0
 
+def init_pool_processes(the_lock):
+    '''Initialize each process with a global variable lock.
+    '''
+    global my_lock
+    my_lock = the_lock
+
+
 
 if __name__ == "__main__":
 
@@ -615,7 +622,7 @@ if __name__ == "__main__":
     dictionary['y_meta'] = y_meta
     dictionary['group_meta'] = group_meta
 
-    with NestablePool(processes=topk) as pool:
+    with NestablePool(processes=topk, initializer=init_pool_processes, initargs=(my_lock,)) as pool:
         results = pool.map(partial(sample_and_evaluate,
                                    starting_time_tt=starting_time_tt,
                                    total_search_time=total_search_time,
