@@ -575,7 +575,7 @@ class MyAutoML:
         self.consumed_energy_limit = consumed_energy_limit
         self.tracker = None
         if type(None) != type(self.consumed_energy_limit):
-            self.tracker = EmissionsTracker()
+            self.tracker = EmissionsTracker(save_to_file=False)
 
 
         self.adversarial_robustness_constraint = adversarial_robustness_constraint
@@ -1049,7 +1049,7 @@ if __name__ == "__main__":
     ensemble_perf = []
     for _ in range(1):
         search = MyAutoML(n_jobs=1,
-                          time_search_budget=10,
+                          time_search_budget=2*60,
                           space=space,
                           main_memory_budget_gb=40,
                           hold_out_fraction=0.6,
