@@ -54,6 +54,236 @@ def predict_range(model, X):
     y_pred = model.predict(X)
     return y_pred
 
+def run_AutoML(trial):
+    repetitions_count = 10
+
+    space = trial.user_attrs['space']
+
+    print(trial.params)
+
+    #make this a hyperparameter
+    search_time = trial.params['global_search_time_constraint']# * 60
+
+    evaluation_time = int(0.1 * search_time)
+    if 'global_evaluation_time_constraint' in trial.params:
+        evaluation_time = trial.params['global_evaluation_time_constraint']
+
+    memory_limit = 10
+    if 'global_memory_constraint' in trial.params:
+        memory_limit = trial.params['global_memory_constraint']
+
+    privacy_limit = None
+    if 'privacy_constraint' in trial.params:
+        privacy_limit = trial.params['privacy_constraint']
+
+    training_time_limit = None
+    if 'training_time_constraint' in trial.params:
+        training_time_limit = trial.params['training_time_constraint']
+
+    inference_time_limit = None
+    if 'inference_time_constraint' in trial.params:
+        inference_time_limit = trial.params['inference_time_constraint']
+
+    consumed_energy_limit = None
+    if 'consumed_energy_limit' in trial.params:
+        consumed_energy_limit = trial.params['consumed_energy_limit']
+
+    pipeline_size_limit = None
+    if 'pipeline_size_constraint' in trial.params:
+        pipeline_size_limit = trial.params['pipeline_size_constraint']
+
+    fairness_limit = 0.0
+    if 'fairness_constraint' in trial.params:
+        fairness_limit = trial.params['fairness_constraint']
+
+    cv = 1
+    number_of_cvs = 1
+    hold_out_fraction = None
+    if 'global_cv' in trial.params:
+        cv = trial.params['global_cv']
+        if 'global_number_cv' in trial.params:
+            number_of_cvs = trial.params['global_number_cv']
+    else:
+        hold_out_fraction = trial.params['hold_out_fraction']
+
+    sample_fraction = 1.0
+    if 'sample_fraction' in trial.params:
+        sample_fraction = trial.params['sample_fraction']
+
+    ensemble_size = 50
+    if not trial.params['use_ensemble']:
+        ensemble_size = 1
+
+    use_incremental_data = trial.params['use_incremental_data']
+
+    shuffle_validation = False
+    train_best_with_full_data = False
+    if not trial.params['use_ensemble']:
+        shuffle_validation = trial.params['shuffle_validation']
+        train_best_with_full_data = trial.params['train_best_with_full_data']
+
+    for pre, _, node in RenderTree(space.parameter_tree):
+        if node.status == True:
+            print("%s%s" % (pre, node.name))
+
+    my_random_seed = int(time.time())
+    if 'data_random_seed' in trial.user_attrs:
+        my_random_seed = trial.user_attrs['data_random_seed']
+
+    sensitive_attribute_id = None
+    try:
+        if fairness_limit > 0.0:
+            task_id = trial.params['dataset_id_fair']
+            X, y, sensitive_attribute_id, categorical_indicator = get_X_y_id(key=task_id)
+            X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X,
+                                                                                        y,
+                                                                                        random_state=my_random_seed,
+                                                                                        stratify=y,
+                                                                                        train_size=0.66)
+
+        else:
+            task_id = trial.params['dataset_id']
+            X_train, X_test, y_train, y_test, categorical_indicator, attribute_names = get_data('data', randomstate=my_random_seed, task_id=task_id)
+    except:
+        return {'objective': 0.0}
+
+    dynamic_params = []
+    for random_i in range(repetitions_count):
+        if fairness_limit > 0.0:
+            search = MyAutoML(cv=cv,
+                              number_of_cvs=number_of_cvs,
+                              n_jobs=1,
+                              evaluation_budget=evaluation_time,
+                              time_search_budget=search_time,
+                              space=space,
+                              main_memory_budget_gb=memory_limit,
+                              differential_privacy_epsilon=privacy_limit,
+                              hold_out_fraction=hold_out_fraction,
+                              sample_fraction=sample_fraction,
+                              training_time_limit=training_time_limit,
+                              inference_time_limit=inference_time_limit,
+                              pipeline_size_limit=pipeline_size_limit,
+                              fairness_limit=fairness_limit,
+                              fairness_group_id=sensitive_attribute_id,
+                              max_ensemble_models=ensemble_size,
+                              use_incremental_data=use_incremental_data,
+                              shuffle_validation=shuffle_validation,
+                              train_best_with_full_data=train_best_with_full_data,
+                              consumed_energy_limit=consumed_energy_limit)
+        else:
+            search = MyAutoML(cv=cv,
+                              number_of_cvs=number_of_cvs,
+                              n_jobs=1,
+                              evaluation_budget=evaluation_time,
+                              time_search_budget=search_time,
+                              space=space,
+                              main_memory_budget_gb=memory_limit,
+                              differential_privacy_epsilon=privacy_limit,
+                              hold_out_fraction=hold_out_fraction,
+                              sample_fraction=sample_fraction,
+                              training_time_limit=training_time_limit,
+                              inference_time_limit=inference_time_limit,
+                              pipeline_size_limit=pipeline_size_limit,
+                              max_ensemble_models=ensemble_size,
+                              use_incremental_data=use_incremental_data,
+                              shuffle_validation=shuffle_validation,
+                              train_best_with_full_data=train_best_with_full_data,
+                              consumed_energy_limit=consumed_energy_limit)
+
+        test_score = 0.0
+        try:
+            search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
+
+            search.ensemble(X_train, y_train)
+            y_hat_test = search.ensemble_predict(X_test)
+            test_score = balanced_accuracy_score(y_test, y_hat_test)
+        except:
+            pass
+        dynamic_params.append(test_score)
+    dynamic_values = np.array(dynamic_params)
+
+    if np.sum(dynamic_values) == 0:
+        return {'objective': 0.0}
+
+    static_params = []
+    for random_i in range(repetitions_count):
+        # default params
+        gen_new = SpaceGenerator()
+        space_new = gen_new.generate_params()
+        for pre, _, node in RenderTree(space_new.parameter_tree):
+            if node.status == True:
+                print("%s%s" % (pre, node.name))
+
+        if fairness_limit > 0.0:
+            search_static = MyAutoML(n_jobs=1,
+                              time_search_budget=search_time,
+                              space=space_new,
+                              evaluation_budget=int(0.1 * search_time),
+                              main_memory_budget_gb=memory_limit,
+                              differential_privacy_epsilon=privacy_limit,
+                              hold_out_fraction=0.33,
+                              training_time_limit=training_time_limit,
+                              inference_time_limit=inference_time_limit,
+                              pipeline_size_limit=pipeline_size_limit,
+                              fairness_limit=fairness_limit,
+                              fairness_group_id=sensitive_attribute_id,
+                              consumed_energy_limit=consumed_energy_limit
+                              )
+        else:
+            search_static = MyAutoML(n_jobs=1,
+                                     time_search_budget=search_time,
+                                     space=space_new,
+                                     evaluation_budget=int(0.1 * search_time),
+                                     main_memory_budget_gb=memory_limit,
+                                     differential_privacy_epsilon=privacy_limit,
+                                     hold_out_fraction=0.33,
+                                     training_time_limit=training_time_limit,
+                                     inference_time_limit=inference_time_limit,
+                                     pipeline_size_limit=pipeline_size_limit,
+                                     consumed_energy_limit=consumed_energy_limit
+                                     )
+
+        try:
+            best_result = search_static.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
+
+            search_static.ensemble(X_train, y_train)
+            y_hat_test = search_static.ensemble_predict(X_test)
+            test_score_default = balanced_accuracy_score(y_test, y_hat_test)
+        except:
+            test_score_default = 0.0
+            traceback.print_exc()
+        static_params.append(test_score_default)
+
+    static_values = np.array(static_params)
+
+    dynamic_values.sort()
+    static_values.sort()
+
+    frequency = np.sum(dynamic_values > static_values) / float(repetitions_count)
+    return {'objective': frequency}
+
+
+def run_AutoML_global(trial_id):
+    comparison = run_AutoML(mp_glob.my_trials[trial_id])['objective']
+
+    # get all best validation scores and evaluate them
+    feature_list = []
+    target_list = []
+
+    feature_list.append(copy.deepcopy(mp_glob.my_trials[trial_id].user_attrs['features']))
+    target_list.append(comparison)
+
+    dataset_name = ''
+    if 'dataset_id' in mp_glob.my_trials[trial_id].params:
+        dataset_name = 'normal_' + str(mp_glob.my_trials[trial_id].params['dataset_id'])
+    else:
+        dataset_name = 'fair_' + str(mp_glob.my_trials[trial_id].params['dataset_id_fair'])
+
+    return {'feature_l': feature_list,
+            'target_l': target_list,
+            'group_l': dataset_name,
+            'trial_id_l': trial_id}
+
 if __name__ == "__main__":
 
     my_openml_tasks = [75126, 75125, 75121, 75120, 75116, 75115, 75114, 189859, 189878, 189786, 167204, 190156, 75156, 166996, 190157, 190158, 168791, 146597, 167203, 167085, 190154, 75098, 190159, 75169, 126030, 146594, 211723, 189864, 189863, 189858, 75236, 190155, 211720, 167202, 75108, 146679, 146592, 166866, 167205, 2356, 75225, 146576, 166970, 258, 75154, 146574, 275, 273, 75221, 75180, 166944, 166951, 189828, 3049, 75139, 167100, 75232, 126031, 189899, 75146, 288, 146600, 166953, 232, 75133, 75092, 75129, 211722, 75100, 2120, 189844, 271, 75217, 146601, 75212, 75153, 75109, 189870, 75179, 146596, 75215, 189840, 3044, 168785, 189779, 75136, 75199, 75235, 189841, 189845, 189869, 254, 166875, 75093, 75159, 146583, 75233, 75089, 167086, 167087, 166905, 167088, 167089, 167097, 167106, 189875, 167090, 211724, 75234, 75187, 2125, 75184, 166897, 2123, 75174, 75196, 189829, 262, 236, 75178, 75219, 75185, 126021, 211721, 3047, 75147, 189900, 75118, 146602, 166906, 189836, 189843, 75112, 75195, 167101, 167094, 75149, 340, 166950, 260, 146593, 75142, 75161, 166859, 166915, 279, 245, 167096, 253, 146578, 267, 2121, 75141, 336, 166913, 75176, 256, 75166, 2119, 75171, 75143, 75134, 166872, 166932, 146603, 126028, 3055, 75148, 75223, 3054, 167103, 75173, 166882, 3048, 3053, 2122, 75163, 167105, 75131, 126024, 75192, 75213, 146575, 166931, 166957, 166956, 75250, 146577, 146586, 166959, 75210, 241, 166958, 189902, 75237, 189846, 75157, 189893, 189890, 189887, 189884, 189883, 189882, 189881, 189880, 167099, 189894]
@@ -120,238 +350,10 @@ if __name__ == "__main__":
 
     print(len(feature_names_new))
 
-    random_runs = (163)
+    random_runs = 2#(163)
 
 
-    def run_AutoML(trial):
-        repetitions_count = 10
 
-        space = trial.user_attrs['space']
-
-        print(trial.params)
-
-        #make this a hyperparameter
-        search_time = trial.params['global_search_time_constraint']# * 60
-
-        evaluation_time = int(0.1 * search_time)
-        if 'global_evaluation_time_constraint' in trial.params:
-            evaluation_time = trial.params['global_evaluation_time_constraint']
-
-        memory_limit = 10
-        if 'global_memory_constraint' in trial.params:
-            memory_limit = trial.params['global_memory_constraint']
-
-        privacy_limit = None
-        if 'privacy_constraint' in trial.params:
-            privacy_limit = trial.params['privacy_constraint']
-
-        training_time_limit = None
-        if 'training_time_constraint' in trial.params:
-            training_time_limit = trial.params['training_time_constraint']
-
-        inference_time_limit = None
-        if 'inference_time_constraint' in trial.params:
-            inference_time_limit = trial.params['inference_time_constraint']
-
-        consumed_energy_limit = None
-        if 'consumed_energy_limit' in trial.params:
-            consumed_energy_limit = trial.params['consumed_energy_limit']
-
-        pipeline_size_limit = None
-        if 'pipeline_size_constraint' in trial.params:
-            pipeline_size_limit = trial.params['pipeline_size_constraint']
-
-        fairness_limit = 0.0
-        if 'fairness_constraint' in trial.params:
-            fairness_limit = trial.params['fairness_constraint']
-
-        cv = 1
-        number_of_cvs = 1
-        hold_out_fraction = None
-        if 'global_cv' in trial.params:
-            cv = trial.params['global_cv']
-            if 'global_number_cv' in trial.params:
-                number_of_cvs = trial.params['global_number_cv']
-        else:
-            hold_out_fraction = trial.params['hold_out_fraction']
-
-        sample_fraction = 1.0
-        if 'sample_fraction' in trial.params:
-            sample_fraction = trial.params['sample_fraction']
-
-        ensemble_size = 50
-        if not trial.params['use_ensemble']:
-            ensemble_size = 1
-
-        use_incremental_data = trial.params['use_incremental_data']
-
-        shuffle_validation = False
-        train_best_with_full_data = False
-        if not trial.params['use_ensemble']:
-            shuffle_validation = trial.params['shuffle_validation']
-            train_best_with_full_data = trial.params['train_best_with_full_data']
-
-        for pre, _, node in RenderTree(space.parameter_tree):
-            if node.status == True:
-                print("%s%s" % (pre, node.name))
-
-        my_random_seed = int(time.time())
-        if 'data_random_seed' in trial.user_attrs:
-            my_random_seed = trial.user_attrs['data_random_seed']
-
-        sensitive_attribute_id = None
-        try:
-            if fairness_limit > 0.0:
-                task_id = trial.params['dataset_id_fair']
-                X, y, sensitive_attribute_id, categorical_indicator = get_X_y_id(key=task_id)
-                X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X,
-                                                                                            y,
-                                                                                            random_state=my_random_seed,
-                                                                                            stratify=y,
-                                                                                            train_size=0.66)
-
-            else:
-                task_id = trial.params['dataset_id']
-                X_train, X_test, y_train, y_test, categorical_indicator, attribute_names = get_data('data', randomstate=my_random_seed, task_id=task_id)
-        except:
-            return {'objective': 0.0}
-
-        dynamic_params = []
-        for random_i in range(repetitions_count):
-            if fairness_limit > 0.0:
-                search = MyAutoML(cv=cv,
-                                  number_of_cvs=number_of_cvs,
-                                  n_jobs=1,
-                                  evaluation_budget=evaluation_time,
-                                  time_search_budget=search_time,
-                                  space=space,
-                                  main_memory_budget_gb=memory_limit,
-                                  differential_privacy_epsilon=privacy_limit,
-                                  hold_out_fraction=hold_out_fraction,
-                                  sample_fraction=sample_fraction,
-                                  training_time_limit=training_time_limit,
-                                  inference_time_limit=inference_time_limit,
-                                  pipeline_size_limit=pipeline_size_limit,
-                                  fairness_limit=fairness_limit,
-                                  fairness_group_id=sensitive_attribute_id,
-                                  max_ensemble_models=ensemble_size,
-                                  use_incremental_data=use_incremental_data,
-                                  shuffle_validation=shuffle_validation,
-                                  train_best_with_full_data=train_best_with_full_data,
-                                  consumed_energy_limit=consumed_energy_limit)
-            else:
-                search = MyAutoML(cv=cv,
-                                  number_of_cvs=number_of_cvs,
-                                  n_jobs=1,
-                                  evaluation_budget=evaluation_time,
-                                  time_search_budget=search_time,
-                                  space=space,
-                                  main_memory_budget_gb=memory_limit,
-                                  differential_privacy_epsilon=privacy_limit,
-                                  hold_out_fraction=hold_out_fraction,
-                                  sample_fraction=sample_fraction,
-                                  training_time_limit=training_time_limit,
-                                  inference_time_limit=inference_time_limit,
-                                  pipeline_size_limit=pipeline_size_limit,
-                                  max_ensemble_models=ensemble_size,
-                                  use_incremental_data=use_incremental_data,
-                                  shuffle_validation=shuffle_validation,
-                                  train_best_with_full_data=train_best_with_full_data,
-                                  consumed_energy_limit=consumed_energy_limit)
-
-            test_score = 0.0
-            try:
-                search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
-
-                search.ensemble(X_train, y_train)
-                y_hat_test = search.ensemble_predict(X_test)
-                test_score = balanced_accuracy_score(y_test, y_hat_test)
-            except:
-                pass
-            dynamic_params.append(test_score)
-        dynamic_values = np.array(dynamic_params)
-
-        if np.sum(dynamic_values) == 0:
-            return {'objective': 0.0}
-
-        static_params = []
-        for random_i in range(repetitions_count):
-            # default params
-            gen_new = SpaceGenerator()
-            space_new = gen_new.generate_params()
-            for pre, _, node in RenderTree(space_new.parameter_tree):
-                if node.status == True:
-                    print("%s%s" % (pre, node.name))
-
-            if fairness_limit > 0.0:
-                search_static = MyAutoML(n_jobs=1,
-                                  time_search_budget=search_time,
-                                  space=space_new,
-                                  evaluation_budget=int(0.1 * search_time),
-                                  main_memory_budget_gb=memory_limit,
-                                  differential_privacy_epsilon=privacy_limit,
-                                  hold_out_fraction=0.33,
-                                  training_time_limit=training_time_limit,
-                                  inference_time_limit=inference_time_limit,
-                                  pipeline_size_limit=pipeline_size_limit,
-                                  fairness_limit=fairness_limit,
-                                  fairness_group_id=sensitive_attribute_id,
-                                  consumed_energy_limit=consumed_energy_limit
-                                  )
-            else:
-                search_static = MyAutoML(n_jobs=1,
-                                         time_search_budget=search_time,
-                                         space=space_new,
-                                         evaluation_budget=int(0.1 * search_time),
-                                         main_memory_budget_gb=memory_limit,
-                                         differential_privacy_epsilon=privacy_limit,
-                                         hold_out_fraction=0.33,
-                                         training_time_limit=training_time_limit,
-                                         inference_time_limit=inference_time_limit,
-                                         pipeline_size_limit=pipeline_size_limit,
-                                         consumed_energy_limit=consumed_energy_limit
-                                         )
-
-            try:
-                best_result = search_static.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
-
-                search_static.ensemble(X_train, y_train)
-                y_hat_test = search_static.ensemble_predict(X_test)
-                test_score_default = balanced_accuracy_score(y_test, y_hat_test)
-            except:
-                test_score_default = 0.0
-                traceback.print_exc()
-            static_params.append(test_score_default)
-
-        static_values = np.array(static_params)
-
-        dynamic_values.sort()
-        static_values.sort()
-
-        frequency = np.sum(dynamic_values > static_values) / float(repetitions_count)
-        return {'objective': frequency}
-
-
-    def run_AutoML_global(trial_id):
-        comparison = run_AutoML(mp_glob.my_trials[trial_id])['objective']
-
-        # get all best validation scores and evaluate them
-        feature_list = []
-        target_list = []
-
-        feature_list.append(copy.deepcopy(mp_glob.my_trials[trial_id].user_attrs['features']))
-        target_list.append(comparison)
-
-        dataset_name = ''
-        if 'dataset_id' in mp_glob.my_trials[trial_id].params:
-            dataset_name = 'normal_' + str(mp_glob.my_trials[trial_id].params['dataset_id'])
-        else:
-            dataset_name = 'fair_' + str(mp_glob.my_trials[trial_id].params['dataset_id_fair'])
-
-        return {'feature_l': feature_list,
-                'target_l': target_list,
-                'group_l': dataset_name,
-                'trial_id_l': trial_id}
 
 
     def calculate_max_std(N, min_value=0, max_value=1):
@@ -609,7 +611,7 @@ if __name__ == "__main__":
 
     with open('/home/neutatz/data/my_temp/felix_X_compare_scaled.p', "wb") as pickle_model_file:
         pickle.dump(dictionary['X_meta'], pickle_model_file)
-    
+
     with open('/home/neutatz/data/my_temp/felix_y_compare_scaled.p', "wb") as pickle_model_file:
         pickle.dump(dictionary['y_meta'], pickle_model_file)
 
