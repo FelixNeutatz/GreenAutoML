@@ -286,17 +286,19 @@ def run_AutoML_global(my_trial, my_scorer):
 
 
 class Objective(object):
-    def __init__(self, model_uncertainty, total_search_time, my_openml_tasks, my_openml_tasks_fair):
+    def __init__(self, model_uncertainty, total_search_time, my_openml_tasks, my_openml_tasks_fair, feature_names):
         self.model_uncertainty = model_uncertainty
         self.total_search_time = total_search_time
         self.my_openml_tasks = my_openml_tasks
         self.my_openml_tasks_fair = my_openml_tasks_fair
+        self.feature_names = feature_names
 
     def __call__(self, trial):
         features = sample_configuration(trial,
                                         total_search_time=self.total_search_time,
                                         my_openml_tasks=self.my_openml_tasks,
-                                        my_openml_tasks_fair=self.my_openml_tasks_fair)
+                                        my_openml_tasks_fair=self.my_openml_tasks_fair,
+                                        feature_names=self.feature_names)
         if type(features) == type(None):
             return -1 * np.inf
 
@@ -310,46 +312,50 @@ class Objective(object):
         objective = uncertainty
         return objective
 
-def get_best_trial(model_uncertainty, total_search_time, my_openml_tasks, my_openml_tasks_fair):
+def get_best_trial(model_uncertainty, total_search_time, my_openml_tasks, my_openml_tasks_fair, feature_names):
     sampler = TPESampler()
     study_uncertainty = optuna.create_study(direction='maximize', sampler=sampler)
     my_objective = Objective(model_uncertainty,
                              total_search_time=total_search_time,
                              my_openml_tasks=my_openml_tasks,
-                             my_openml_tasks_fair=my_openml_tasks_fair)
+                             my_openml_tasks_fair=my_openml_tasks_fair,
+                             feature_names=feature_names)
     study_uncertainty.optimize(my_objective, n_trials=100, n_jobs=1)
     return study_uncertainty.best_trial
 
 
 class RandomObjective(object):
-    def __init__(self, total_search_time, my_openml_tasks, my_openml_tasks_fair):
+    def __init__(self, total_search_time, my_openml_tasks, my_openml_tasks_fair, feature_names):
         self.total_search_time = total_search_time
         self.my_openml_tasks = my_openml_tasks
         self.my_openml_tasks_fair = my_openml_tasks_fair
+        self.feature_names = feature_names
 
     def __call__(self, trial):
         features = sample_configuration(trial,
                                         total_search_time=self.total_search_time,
                                         my_openml_tasks=self.my_openml_tasks,
-                                        my_openml_tasks_fair=self.my_openml_tasks_fair)
+                                        my_openml_tasks_fair=self.my_openml_tasks_fair,
+                                        feature_names=self.feature_names)
         if type(features) == type(None):
             return -1 * np.inf
 
         return 1
 
-def get_best_random_trial(total_search_time, my_openml_tasks, my_openml_tasks_fair):
+def get_best_random_trial(total_search_time, my_openml_tasks, my_openml_tasks_fair, feature_names):
     while True:
         sampler = RandomSampler()
         study_uncertainty = optuna.create_study(direction='maximize', sampler=sampler)
         my_objective = RandomObjective(total_search_time=total_search_time,
                                         my_openml_tasks=my_openml_tasks,
-                                        my_openml_tasks_fair=my_openml_tasks_fair)
+                                        my_openml_tasks_fair=my_openml_tasks_fair,
+                                        feature_names=feature_names)
         study_uncertainty.optimize(my_objective, n_trials=1, n_jobs=1)
         if study_uncertainty.best_value > 0.0:
             break
     return study_uncertainty.best_trial
 
-def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer, dictionary, my_openml_tasks, my_openml_tasks_fair):
+def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer, dictionary, my_openml_tasks, my_openml_tasks_fair, feature_names):
     if time.time() - starting_time_tt > 60*60*24*7:
         return -1
 
@@ -372,11 +378,13 @@ def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer, 
             best_trial = get_best_trial(model_uncertainty,
                                         total_search_time=total_search_time,
                                         my_openml_tasks=my_openml_tasks,
-                                        my_openml_tasks_fair=my_openml_tasks_fair)
+                                        my_openml_tasks_fair=my_openml_tasks_fair,
+                                        feature_names=feature_names)
         else:
             best_trial = get_best_random_trial(total_search_time=total_search_time,
                                                my_openml_tasks=my_openml_tasks,
-                                               my_openml_tasks_fair=my_openml_tasks_fair)
+                                               my_openml_tasks_fair=my_openml_tasks_fair,
+                                               feature_names=feature_names)
         features_of_sampled_point = best_trial.user_attrs['features']
 
         result = run_AutoML(best_trial, my_scorer)
@@ -415,13 +423,7 @@ def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer, 
 
     return 0
 
-    def calculate_max_std(N, min_value=0, max_value=1):
-        max_elements = np.ones(int(N / 2)) * max_value
-        min_elements = np.ones(int(N / 2)) * min_value
-        return np.std(np.append(min_elements, max_elements))
-
-
-def sample_configuration(trial, total_search_time, my_openml_tasks, my_openml_tasks_fair):
+def sample_configuration(trial, total_search_time, my_openml_tasks, my_openml_tasks_fair, feature_names):
     try:
         gen = SpaceGenerator()
         space = gen.generate_params()
@@ -482,8 +484,8 @@ def sample_configuration(trial, total_search_time, my_openml_tasks, my_openml_ta
         return None
     return features
 
-def random_config(trial, total_search_time, my_openml_tasks, my_openml_tasks_fair):
-    features = sample_configuration(trial, total_search_time, my_openml_tasks, my_openml_tasks_fair)
+def random_config(trial, total_search_time, my_openml_tasks, my_openml_tasks_fair, feature_names):
+    features = sample_configuration(trial, total_search_time, my_openml_tasks, my_openml_tasks_fair, feature_names)
     if type(features) == type(None):
         return -1 * np.inf
     return 0.0
@@ -583,7 +585,8 @@ if __name__ == "__main__":
         study_random.optimize(partial(random_config,
                                       total_search_time=total_search_time,
                                       my_openml_tasks=my_openml_tasks,
-                                      my_openml_tasks_fair=my_openml_tasks_fair), n_trials=random_runs, n_jobs=1)
+                                      my_openml_tasks_fair=my_openml_tasks_fair,
+                                      feature_names=feature_names), n_trials=random_runs, n_jobs=1)
 
         my_trials = []
         trial_id2aqval = {}
@@ -619,7 +622,8 @@ if __name__ == "__main__":
                                    my_scorer=my_scorer,
                                    dictionary=dictionary,
                                    my_openml_tasks=my_openml_tasks,
-                                   my_openml_tasks_fair=my_openml_tasks_fair), range(2))#100000
+                                   my_openml_tasks_fair=my_openml_tasks_fair,
+                                   feature_names=feature_names), range(2))#100000
 
     print('storing stuff')
 
