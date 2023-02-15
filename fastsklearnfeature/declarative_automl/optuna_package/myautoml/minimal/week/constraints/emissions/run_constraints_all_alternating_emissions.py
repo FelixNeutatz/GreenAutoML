@@ -284,6 +284,56 @@ def run_AutoML_global(my_trial, my_scorer):
             'group_l': dataset_name
             }#,trial_id_l': trial_id}
 
+
+class Objective(object):
+    def __init__(self, model_uncertainty, total_search_time):
+        self.model_uncertainty = model_uncertainty
+        self.total_search_time = total_search_time
+
+    def __call__(self, trial):
+        features = sample_configuration(trial, total_search_time=self.total_search_time)
+        if type(features) == type(None):
+            return -1 * np.inf
+
+        predictions = []
+        for tree in range(self.model_uncertainty.n_estimators):
+            predictions.append(predict_range(self.model_uncertainty.estimators_[tree], features))
+
+        stddev_pred = np.std(np.matrix(predictions).transpose(), axis=1)
+        uncertainty = stddev_pred[0]
+
+        objective = uncertainty
+        return objective
+
+def get_best_trial(model_uncertainty, total_search_time):
+    sampler = TPESampler()
+    study_uncertainty = optuna.create_study(direction='maximize', sampler=sampler)
+    my_objective = Objective(model_uncertainty, total_search_time=total_search_time)
+    study_uncertainty.optimize(my_objective, n_trials=100, n_jobs=1)
+    return study_uncertainty.best_trial
+
+
+class RandomObjective(object):
+    def __init__(self, total_search_time):
+        self.total_search_time = total_search_time
+
+    def __call__(self, trial):
+        features = sample_configuration(trial, total_search_time=self.total_search_time)
+        if type(features) == type(None):
+            return -1 * np.inf
+
+        return 1
+
+def get_best_random_trial(total_search_time):
+    while True:
+        sampler = RandomSampler()
+        study_uncertainty = optuna.create_study(direction='maximize', sampler=sampler)
+        my_objective = RandomObjective(total_search_time=total_search_time)
+        study_uncertainty.optimize(my_objective, n_trials=1, n_jobs=1)
+        if study_uncertainty.best_value > 0.0:
+            break
+    return study_uncertainty.best_trial
+
 def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer, dictionary):
     if time.time() - starting_time_tt > 60*60*24*7:
         return -1
@@ -536,54 +586,7 @@ if __name__ == "__main__":
         print('done')
 
 
-    class Objective(object):
-        def __init__(self, model_uncertainty, total_search_time):
-            self.model_uncertainty = model_uncertainty
-            self.total_search_time = total_search_time
 
-        def __call__(self, trial):
-            features = sample_configuration(trial, total_search_time=self.total_search_time)
-            if type(features) == type(None):
-                return -1 * np.inf
-
-            predictions = []
-            for tree in range(self.model_uncertainty.n_estimators):
-                predictions.append(predict_range(self.model_uncertainty.estimators_[tree], features))
-
-            stddev_pred = np.std(np.matrix(predictions).transpose(), axis=1)
-            uncertainty = stddev_pred[0]
-
-            objective = uncertainty
-            return objective
-
-    def get_best_trial(model_uncertainty, total_search_time):
-        sampler = TPESampler()
-        study_uncertainty = optuna.create_study(direction='maximize', sampler=sampler)
-        my_objective = Objective(model_uncertainty, total_search_time=total_search_time)
-        study_uncertainty.optimize(my_objective, n_trials=100, n_jobs=1)
-        return study_uncertainty.best_trial
-
-
-    class RandomObjective(object):
-        def __init__(self, total_search_time):
-            self.total_search_time = total_search_time
-
-        def __call__(self, trial):
-            features = sample_configuration(trial, total_search_time=self.total_search_time)
-            if type(features) == type(None):
-                return -1 * np.inf
-
-            return 1
-
-    def get_best_random_trial(total_search_time):
-        while True:
-            sampler = RandomSampler()
-            study_uncertainty = optuna.create_study(direction='maximize', sampler=sampler)
-            my_objective = RandomObjective(total_search_time=total_search_time)
-            study_uncertainty.optimize(my_objective, n_trials=1, n_jobs=1)
-            if study_uncertainty.best_value > 0.0:
-                break
-        return study_uncertainty.best_trial
 
 
 
@@ -594,7 +597,7 @@ if __name__ == "__main__":
     dictionary['group_meta'] = group_meta
 
     with NestablePool(processes=topk) as pool:
-        results = pool.map(partial(sample_and_evaluate, starting_time_tt=starting_time_tt, total_search_time=total_search_time, my_scorer=my_scorer, dictionary=dictionary), range(100000))
+        results = pool.map(partial(sample_and_evaluate, starting_time_tt=starting_time_tt, total_search_time=total_search_time, my_scorer=my_scorer, dictionary=dictionary), range(2))#100000
 
     print('storing stuff')
 
