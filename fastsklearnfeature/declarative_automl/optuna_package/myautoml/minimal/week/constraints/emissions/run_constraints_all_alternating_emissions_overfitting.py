@@ -398,7 +398,7 @@ def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer, 
             model_overfitting = None
             if len(indices_overfit) > 10:
                 model_overfitting = RandomForestRegressor(n_estimators=1000, random_state=my_id1, n_jobs=1)
-                model_overfitting.fit(X_meta[indices_overfit], y_overfit)
+                model_overfitting.fit(X_meta[indices_overfit], y_overfit, sample_weight=list(range(1, len(y_overfit) + 1)))
 
             if type(None) == type(model_overfitting):
                 best_trial = get_best_trial(model_uncertainty,
