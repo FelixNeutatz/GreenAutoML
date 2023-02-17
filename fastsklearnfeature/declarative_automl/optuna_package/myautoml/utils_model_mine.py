@@ -511,7 +511,8 @@ def generate_features_minimum_sample_ensemble(trial, metafeature_values_hold, se
                                         save_data=True,
                                         tune_eval_time=False,
                                         tune_val_fraction=False,
-                                        tune_cv=False
+                                        tune_cv=False,
+                                        consumed_energy_limit=None
                                         ):
     try:
         gen = SpaceGenerator()
@@ -576,8 +577,10 @@ def generate_features_minimum_sample_ensemble(trial, metafeature_values_hold, se
         use_incremental_data = trial.suggest_categorical('use_incremental_data', [True, False])
 
         shuffle_validation = False
+        train_best_with_full_data = False
         if not use_ensemble:
-            shuffle_validation = trial.suggest_categorical('shuffle_validation', [True, False])
+            shuffle_validation = trial.suggest_categorical('shuffle_validation', [False, True])
+            train_best_with_full_data = trial.suggest_categorical('train_best_with_full_data', [False, True])
 
         my_list_constraints_values = [search_time,
                                       evaluation_time,
@@ -593,7 +596,9 @@ def generate_features_minimum_sample_ensemble(trial, metafeature_values_hold, se
                                       ifNull(fairness_limit, constant_value=0.0),
                                       int(use_ensemble),
                                       int(use_incremental_data),
-                                      int(shuffle_validation)
+                                      int(shuffle_validation),
+                                      int(train_best_with_full_data),
+                                      ifNull(consumed_energy_limit, constant_value=100.0)
                                       ]
 
         my_list_constraints = ['global_search_time_constraint',
@@ -610,7 +615,9 @@ def generate_features_minimum_sample_ensemble(trial, metafeature_values_hold, se
                                'fairness_constraint',
                                'use_ensemble',
                                'use_incremental_data',
-                               'shuffle_validation'
+                               'shuffle_validation',
+                               'train_best_with_full_data',
+                               'consumed_energy_limit'
                                ]
 
         features = space2features(space, my_list_constraints_values, metafeature_values_hold)
@@ -891,6 +898,7 @@ def optimize_accuracy_under_minimal_sample_ensemble(trial, metafeature_values_ho
                                         inference_time_limit=None,
                                         pipeline_size_limit=None,
                                         fairness_limit=None,
+                                        consumed_energy_limit=None,
                                         tune_space=False,
                                         tune_eval_time=False,
                                         tune_val_fraction=False,
@@ -906,6 +914,7 @@ def optimize_accuracy_under_minimal_sample_ensemble(trial, metafeature_values_ho
                       inference_time_limit=inference_time_limit,
                       pipeline_size_limit=pipeline_size_limit,
                       fairness_limit=fairness_limit,
+                      consumed_energy_limit=consumed_energy_limit,
                       tune_space=tune_space,
                       save_data=False,
                       tune_eval_time=tune_eval_time,
@@ -916,7 +925,7 @@ def optimize_accuracy_under_minimal_sample_ensemble(trial, metafeature_values_ho
     success_val = predict_range(model_success, features)
 
     try:
-        if trial.number == 0 or success_val > mp_global.study_prune.best_trial.value:
+        if trial.number == 0 or success_val > trial.study.best_trial.value:
             trial.set_user_attr('space', copy.deepcopy(space))
             if save_best_features:
                 trial.set_user_attr('best_features', copy.deepcopy(features))
