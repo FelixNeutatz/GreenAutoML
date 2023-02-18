@@ -217,40 +217,43 @@ def build_ensemble(return_dict, max_ensemble_models, model_store, dummy_result, 
 
                         #TODO: check whether sum of model already succeeds
 
-                        start = time.time()
-                        ensemble_sel = EnsembleSelection(ensemble_size=len(validation_predictions_new),
-                                                         task_type=MULTICLASS_CLASSIFICATION,
-                                                         random_state=0,
-                                                         metric=ba)
-                        ensemble_sel.fit(validation_predictions_new, y_test, identifiers=None)
-                        print('weights: ' + str(ensemble_sel.weights_))
-                        ensemble_time = time.time() - start
-                        p_ensemble = EnsembleClassifier(models=new_ensemble_models, ensemble_selection=ensemble_sel)
+                        try:
+                            start = time.time()
+                            ensemble_sel = EnsembleSelection(ensemble_size=len(validation_predictions_new),
+                                                             task_type=MULTICLASS_CLASSIFICATION,
+                                                             random_state=0,
+                                                             metric=ba)
+                            ensemble_sel.fit(validation_predictions_new, y_test, identifiers=None)
+                            print('weights: ' + str(ensemble_sel.weights_))
+                            ensemble_time = time.time() - start
+                            p_ensemble = EnsembleClassifier(models=new_ensemble_models, ensemble_selection=ensemble_sel)
 
-                        new_return_dict = {}
-                        if constraints_satisfied(p_ensemble,
-                                                 new_return_dict,
-                                                 key,
-                                                 new_calc_training_time + ensemble_time,
-                                                 training_time_limit,
-                                                 pipeline_size_limit,
-                                                 inference_time_limit,
-                                                 X,
-                                                 y,
-                                                 group_id,
-                                                 fairness_limit):
-                            ensemble_models = new_ensemble_models
-                            validation_predictions = validation_predictions_new
-                            calc_training_time = new_calc_training_time
+                            new_return_dict = {}
+                            if constraints_satisfied(p_ensemble,
+                                                     new_return_dict,
+                                                     key,
+                                                     new_calc_training_time + ensemble_time,
+                                                     training_time_limit,
+                                                     pipeline_size_limit,
+                                                     inference_time_limit,
+                                                     X,
+                                                     y,
+                                                     group_id,
+                                                     fairness_limit):
+                                ensemble_models = new_ensemble_models
+                                validation_predictions = validation_predictions_new
+                                calc_training_time = new_calc_training_time
 
-                            return_dict[key + 'ensemble'] = p_ensemble
+                                return_dict[key + 'ensemble'] = p_ensemble
 
-                            for k_return, val_return in new_return_dict.items():
-                                return_dict['ensemble_' + k_return] = val_return
-                        else:
-                            if not are_monotonic_constraints_satisfied(new_return_dict, key, training_time_limit,
-                                                                       pipeline_size_limit, inference_time_limit):
-                                return
+                                for k_return, val_return in new_return_dict.items():
+                                    return_dict['ensemble_' + k_return] = val_return
+                            else:
+                                if not are_monotonic_constraints_satisfied(new_return_dict, key, training_time_limit,
+                                                                           pipeline_size_limit, inference_time_limit):
+                                    return
+                        except:
+                            return
                     else:
                         ensemble_models = new_ensemble_models
                         validation_predictions = validation_predictions_new
