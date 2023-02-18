@@ -41,20 +41,6 @@ mspace = mgen.generate_params()
 my_list = list(mspace.name2node.keys())
 my_list.sort()
 
-class NoDaemonProcess(mp.Process):
-    # make 'daemon' attribute always return False
-    def _get_daemon(self):
-        return False
-    def _set_daemon(self, value):
-        pass
-    daemon = property(_get_daemon, _set_daemon)
-
-# We sub-class multiprocessing.pool.Pool instead of multiprocessing.Pool
-# because the latter is only a wrapper function, not a proper class.
-class MyPool(mp.pool.Pool):
-    Process = NoDaemonProcess
-
-
 def get_feature_names(my_list_constraints=None):
     feature_names = copy.deepcopy(my_list)
     feature_names.extend(copy.deepcopy(my_list_constraints))
