@@ -383,7 +383,7 @@ def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer, 
 
     #assert len(X_meta) == len(y_meta), 'len(X) != len(y)'
 
-    use_overfitting = np.random.choice([True, False])
+    use_overfitting = True#np.random.choice([True, False])
     actual_y = 0.0
     overfitting_y = None
     #try:
