@@ -386,7 +386,8 @@ def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer, 
     use_overfitting = np.random.choice([True, False])
     actual_y = 0.0
     overfitting_y = None
-    try:
+    #try:
+    if True:
         best_trial = None
         features_of_sampled_point = None
         specified_space = None
@@ -462,9 +463,9 @@ def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer, 
         actual_y = result['objective']
         if 'overfitting' in result:
             overfitting_y = result['overfitting']
-    except Exception as e:
-        print('catched: ' + str(e))
-        return 0
+    #except Exception as e:
+    #    print('catched: ' + str(e))
+    #    return 0
 
     my_lock.acquire()
     try:
