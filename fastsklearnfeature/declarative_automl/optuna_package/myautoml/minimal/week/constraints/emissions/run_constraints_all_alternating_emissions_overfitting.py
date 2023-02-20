@@ -564,6 +564,7 @@ def sample_configuration(trial, total_search_time, my_openml_tasks, my_openml_ta
         features = FeatureTransformations().fit(features).transform(features, feature_names=feature_names)
 
         trial.set_user_attr('features', features)
+        trial.set_user_attr('metafeature_values', metafeature_values)
     except:
         traceback.print_exc()
         return None
