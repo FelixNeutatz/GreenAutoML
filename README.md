@@ -14,5 +14,8 @@ conda create -n AutoMLD python=3.7
 conda activate AutoMLD
 cd Software/DeclarativeAutoML/
 git pull origin main
+python -m pip install codecarbon
+python -m pip install tabpfn
+sudo chmod -R a+r /sys/class/powercap/intel-rapl
 sh setup.sh
 ```
