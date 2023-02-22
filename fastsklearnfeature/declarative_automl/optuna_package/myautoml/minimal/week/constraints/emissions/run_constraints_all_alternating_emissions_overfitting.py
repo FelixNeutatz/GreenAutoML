@@ -366,15 +366,15 @@ def get_best_random_trial(total_search_time, my_openml_tasks, my_openml_tasks_fa
             break
     return study_uncertainty.best_trial
 
-def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer, dictionary, my_openml_tasks, my_openml_tasks_fair, feature_names, feature_names_new):
+def sample_and_evaluate(my_id1):
     if time.time() - starting_time_tt > 60*60*24*1: # 60*60*24*7
         return -1
 
-    X_meta = copy.deepcopy(dictionary['X_meta'])
-    y_meta = copy.deepcopy(dictionary['y_meta'])
+    X_meta = copy.deepcopy(dictionary_felix['X_meta'])
+    y_meta = copy.deepcopy(dictionary_felix['y_meta'])
 
-    y_overfit = copy.deepcopy(dictionary['y_overfit'])
-    indices_overfit = copy.deepcopy(dictionary['indices_overfit'])
+    y_overfit = copy.deepcopy(dictionary_felix['y_overfit'])
+    indices_overfit = copy.deepcopy(dictionary_felix['indices_overfit'])
 
     # how many are there
     my_len = min(len(X_meta), len(y_meta))
@@ -469,27 +469,27 @@ def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer, 
 
     my_lock.acquire()
     try:
-        X_meta = dictionary['X_meta']
+        X_meta = dictionary_felix['X_meta']
         index_overfit = len(X_meta)
-        dictionary['X_meta'] = np.vstack((X_meta, features_of_sampled_point))
+        dictionary_felix['X_meta'] = np.vstack((X_meta, features_of_sampled_point))
 
-        y_meta = dictionary['y_meta']
+        y_meta = dictionary_felix['y_meta']
         y_meta.append(actual_y)
-        dictionary['y_meta'] = y_meta
+        dictionary_felix['y_meta'] = y_meta
 
 
         if type(overfitting_y) != type(None) and use_overfitting:
-            y_overfit = dictionary['y_overfit']
+            y_overfit = dictionary_felix['y_overfit']
             y_overfit.append(overfitting_y)
-            dictionary['y_overfit'] = y_overfit
+            dictionary_felix['y_overfit'] = y_overfit
 
-            indices_overfit = dictionary['indices_overfit']
+            indices_overfit = dictionary_felix['indices_overfit']
             indices_overfit.append(index_overfit)
-            dictionary['indices_overfit'] = indices_overfit
+            dictionary_felix['indices_overfit'] = indices_overfit
 
         #assert len(X_meta) == len(y_meta), 'len(X) != len(y)'
 
-        group_meta = dictionary['group_meta']
+        group_meta = dictionary_felix['group_meta']
 
         dataset_name = ''
         if 'dataset_id' in best_trial.params:
@@ -498,7 +498,7 @@ def sample_and_evaluate(my_id1, starting_time_tt, total_search_time, my_scorer, 
             dataset_name = 'fair_' + str(best_trial.params['dataset_id_fair'])
 
         group_meta.append(dataset_name)
-        dictionary['group_meta'] = group_meta
+        dictionary_felix['group_meta'] = group_meta
 
         #assert len(X_meta) == len(group_meta), 'len(X) != len(group)'
     except Exception as e:
@@ -576,11 +576,29 @@ def random_config(trial, total_search_time, my_openml_tasks, my_openml_tasks_fai
         return -1 * np.inf
     return 0.0
 
-def init_pool_processes(the_lock):
+def init_pool_processes(my_lock_p,starting_time_tt_p, total_search_time_p, my_scorer_p, dictionary_felix_p, my_openml_tasks_p, my_openml_tasks_fair_p, feature_names_p, feature_names_new_p):
     '''Initialize each process with a global variable lock.
     '''
     global my_lock
-    my_lock = the_lock
+    global starting_time_tt
+    global total_search_time
+    global my_scorer
+    global dictionary_felix
+    global my_openml_tasks
+    global my_openml_tasks_fair
+    global feature_names
+    global feature_names_new
+
+
+    my_lock = my_lock_p
+    starting_time_tt = starting_time_tt_p
+    total_search_time = total_search_time_p
+    my_scorer = my_scorer_p
+    dictionary_felix = dictionary_felix_p
+    my_openml_tasks = my_openml_tasks_p
+    my_openml_tasks_fair = my_openml_tasks_fair_p
+    feature_names = feature_names_p
+    feature_names_new = feature_names_new_p
 
 
 
@@ -624,7 +642,7 @@ if __name__ == "__main__":
     my_lock = Lock()
 
     mgr = mp.Manager()
-    dictionary = mgr.dict()
+    dictionary_felix = mgr.dict()
 
 
     my_list_constraints = ['global_search_time_constraint',
@@ -706,43 +724,35 @@ if __name__ == "__main__":
 
     assert len(X_meta) == len(y_meta)
 
-    dictionary['X_meta'] = X_meta
-    dictionary['y_meta'] = y_meta
-    dictionary['group_meta'] = group_meta
-    dictionary['y_overfit'] = y_overfit
-    dictionary['indices_overfit'] = indices_overfit
+    dictionary_felix['X_meta'] = X_meta
+    dictionary_felix['y_meta'] = y_meta
+    dictionary_felix['group_meta'] = group_meta
+    dictionary_felix['y_overfit'] = y_overfit
+    dictionary_felix['indices_overfit'] = indices_overfit
 
-    with NestablePool(processes=topk, initializer=init_pool_processes, initargs=(my_lock,)) as pool:
-        results = pool.map(partial(sample_and_evaluate,
-                                   starting_time_tt=starting_time_tt,
-                                   total_search_time=total_search_time,
-                                   my_scorer=my_scorer,
-                                   dictionary=dictionary,
-                                   my_openml_tasks=my_openml_tasks,
-                                   my_openml_tasks_fair=my_openml_tasks_fair,
-                                   feature_names=feature_names,
-                                   feature_names_new=feature_names_new), range(100000)) #100000
+    with NestablePool(processes=topk, initializer=init_pool_processes, initargs=(my_lock,my_lock,starting_time_tt, total_search_time, my_scorer, dictionary_felix, my_openml_tasks, my_openml_tasks_fair, feature_names, feature_names_new,)) as pool:
+        results = pool.map(sample_and_evaluate, range(100000)) #100000
 
     print('storing stuff')
 
     model_uncertainty = RandomForestRegressor(n_estimators=1000, random_state=42, n_jobs=1)
-    model_uncertainty.fit(dictionary['X_meta'], dictionary['y_meta'])
+    model_uncertainty.fit(dictionary_felix['X_meta'], dictionary_felix['y_meta'])
 
     with open('/home/neutatz/data/my_temp/my_great_model_compare_scaled.p', "wb") as pickle_model_file:
         pickle.dump(model_uncertainty, pickle_model_file)
 
     with open('/home/neutatz/data/my_temp/felix_X_compare_scaled.p', "wb") as pickle_model_file:
-        pickle.dump(dictionary['X_meta'], pickle_model_file)
+        pickle.dump(dictionary_felix['X_meta'], pickle_model_file)
 
     with open('/home/neutatz/data/my_temp/felix_y_compare_scaled.p', "wb") as pickle_model_file:
-        pickle.dump(dictionary['y_meta'], pickle_model_file)
+        pickle.dump(dictionary_felix['y_meta'], pickle_model_file)
 
     with open('/home/neutatz/data/my_temp/felix_group_compare_scaled.p', "wb") as pickle_model_file:
-        pickle.dump(dictionary['group_meta'], pickle_model_file)
+        pickle.dump(dictionary_felix['group_meta'], pickle_model_file)
 
     with open('/home/neutatz/data/my_temp/felix_y_overfit_compare_scaled.p', "wb") as pickle_model_file:
-        pickle.dump(dictionary['y_overfit'], pickle_model_file)
+        pickle.dump(dictionary_felix['y_overfit'], pickle_model_file)
 
     with open('/home/neutatz/data/my_temp/felix_indices_overfit_compare_scaled.p', "wb") as pickle_model_file:
-        pickle.dump(dictionary['indices_overfit'], pickle_model_file)
+        pickle.dump(dictionary_felix['indices_overfit'], pickle_model_file)
 
