@@ -22,7 +22,7 @@ finished = []
 session = server.new_session(session_name="install", kill_session=True, attach=False)
 session.attached_pane.send_keys('exec bash')
 session.attached_pane.send_keys('conda activate ' + conda_name)
-session.attached_pane.send_keys('cd /home/neutatz/Software/DeclarativeAutoML')
+session.attached_pane.send_keys('cd /home/neutatz/Software/GreenAutoML')
 #session.attached_pane.send_keys('git pull origin main')
 #session.attached_pane.send_keys('python -m pip install .')
 
@@ -36,7 +36,7 @@ while len(finished) < len(datasets):
         running_ids.append(datasets[data_id])
         session.attached_pane.send_keys('exec bash')
         session.attached_pane.send_keys('conda activate ' + conda_name)
-        session.attached_pane.send_keys('cd /home/neutatz/Software/DeclarativeAutoML')
+        session.attached_pane.send_keys('cd /home/neutatz/Software/GreenAutoML')
         session.attached_pane.send_keys('python ' + program + ' -d ' + str(datasets[data_id]) + ' -o ' + str(outputname))
         data_id += 1
 
