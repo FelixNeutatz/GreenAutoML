@@ -730,7 +730,7 @@ if __name__ == "__main__":
     dictionary_felix['y_overfit'] = y_overfit
     dictionary_felix['indices_overfit'] = indices_overfit
 
-    with NestablePool(processes=topk, initializer=init_pool_processes, initargs=(my_lock,my_lock,starting_time_tt, total_search_time, my_scorer, dictionary_felix, my_openml_tasks, my_openml_tasks_fair, feature_names, feature_names_new,)) as pool:
+    with NestablePool(processes=topk, initializer=init_pool_processes, initargs=(my_lock,starting_time_tt, total_search_time, my_scorer, dictionary_felix, my_openml_tasks, my_openml_tasks_fair, feature_names, feature_names_new,)) as pool:
         results = pool.map(sample_and_evaluate, range(100000)) #100000
 
     print('storing stuff')

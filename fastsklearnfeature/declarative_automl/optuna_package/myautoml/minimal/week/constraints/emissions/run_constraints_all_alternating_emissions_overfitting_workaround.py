@@ -367,7 +367,7 @@ def get_best_random_trial(total_search_time, my_openml_tasks, my_openml_tasks_fa
     return study_uncertainty.best_trial
 
 def sample_and_evaluate(my_id1):
-    if time.time() - starting_time_tt > 60*60*24*1: # 60*60*24*7
+    if time.time() - starting_time_tt > 60*30:#60*60*24*1: # 60*60*24*7
 
         my_lock.acquire()
         if not dictionary_felix['training_done']:
@@ -606,7 +606,15 @@ def random_config(trial, total_search_time, my_openml_tasks, my_openml_tasks_fai
         return -1 * np.inf
     return 0.0
 
-def init_pool_processes(my_lock_p,starting_time_tt_p, total_search_time_p, my_scorer_p, dictionary_felix_p, my_openml_tasks_p, my_openml_tasks_fair_p, feature_names_p, feature_names_new_p):
+def init_pool_processes_p(my_lock_p,
+                        starting_time_tt_p,
+                        total_search_time_p,
+                        my_scorer_p,
+                        dictionary_felix_p,
+                        my_openml_tasks_p,
+                        my_openml_tasks_fair_p,
+                        feature_names_p,
+                        feature_names_new_p):
     '''Initialize each process with a global variable lock.
     '''
     global my_lock
@@ -761,7 +769,7 @@ if __name__ == "__main__":
     dictionary_felix['indices_overfit'] = indices_overfit
     dictionary_felix['training_done'] = False
 
-    with NestablePool(processes=topk, initializer=init_pool_processes, initargs=(my_lock,my_lock,starting_time_tt, total_search_time, my_scorer, dictionary_felix, my_openml_tasks, my_openml_tasks_fair, feature_names, feature_names_new,)) as pool:
+    with NestablePool(processes=topk, initializer=init_pool_processes_p, initargs=(my_lock,starting_time_tt, total_search_time, my_scorer, dictionary_felix, my_openml_tasks, my_openml_tasks_fair, feature_names, feature_names_new,)) as pool:
         results = pool.map(sample_and_evaluate, range(100000)) #100000
 
 
