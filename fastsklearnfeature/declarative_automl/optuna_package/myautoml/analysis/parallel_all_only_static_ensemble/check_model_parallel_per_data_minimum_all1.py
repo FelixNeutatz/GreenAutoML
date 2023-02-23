@@ -69,7 +69,7 @@ if __name__ == "__main__":
                     gen_new = SpaceGenerator()
                     space = gen_new.generate_params()
 
-                    tracker = EmissionsTracker()
+                    tracker = EmissionsTracker(save_to_file=False)
                     tracker.start()
 
                     search_default = AutoEn(n_jobs=1,
