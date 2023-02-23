@@ -224,34 +224,34 @@ def build_ensemble(return_dict, max_ensemble_models, model_store, dummy_result, 
                                                              random_state=0,
                                                              metric=ba)
                             ensemble_sel.fit(validation_predictions_new, y_test, identifiers=None)
-                            print('weights: ' + str(ensemble_sel.weights_))
                             ensemble_time = time.time() - start
-                            p_ensemble = EnsembleClassifier(models=new_ensemble_models, ensemble_selection=ensemble_sel)
+                            if np.count_nonzero(ensemble_sel.weights_) > 1:
+                                p_ensemble = EnsembleClassifier(models=new_ensemble_models, ensemble_selection=ensemble_sel)
 
-                            new_return_dict = {}
-                            if constraints_satisfied(p_ensemble,
-                                                     new_return_dict,
-                                                     key,
-                                                     new_calc_training_time + ensemble_time,
-                                                     training_time_limit,
-                                                     pipeline_size_limit,
-                                                     inference_time_limit,
-                                                     X,
-                                                     y,
-                                                     group_id,
-                                                     fairness_limit):
-                                ensemble_models = new_ensemble_models
-                                validation_predictions = validation_predictions_new
-                                calc_training_time = new_calc_training_time
+                                new_return_dict = {}
+                                if constraints_satisfied(p_ensemble,
+                                                         new_return_dict,
+                                                         key,
+                                                         new_calc_training_time + ensemble_time,
+                                                         training_time_limit,
+                                                         pipeline_size_limit,
+                                                         inference_time_limit,
+                                                         X,
+                                                         y,
+                                                         group_id,
+                                                         fairness_limit):
+                                    ensemble_models = new_ensemble_models
+                                    validation_predictions = validation_predictions_new
+                                    calc_training_time = new_calc_training_time
 
-                                return_dict[key + 'ensemble'] = p_ensemble
+                                    return_dict[key + 'ensemble'] = p_ensemble
 
-                                for k_return, val_return in new_return_dict.items():
-                                    return_dict['ensemble_' + k_return] = val_return
-                            else:
-                                if not are_monotonic_constraints_satisfied(new_return_dict, key, training_time_limit,
-                                                                           pipeline_size_limit, inference_time_limit):
-                                    return
+                                    for k_return, val_return in new_return_dict.items():
+                                        return_dict['ensemble_' + k_return] = val_return
+                                else:
+                                    if not are_monotonic_constraints_satisfied(new_return_dict, key, training_time_limit,
+                                                                               pipeline_size_limit, inference_time_limit):
+                                        return
                         except:
                             return
                     else:
@@ -1056,23 +1056,23 @@ if __name__ == "__main__":
                           space=space,
                           main_memory_budget_gb=40,
                           hold_out_fraction=0.6,
-                          max_ensemble_models=1,
+                          max_ensemble_models=10,
                           use_incremental_data=True,
                           #inference_time_limit=0.002
                           #training_time_limit=0.02
                           #pipeline_size_limit=10000
                           #fairness_limit=0.95,
                           #fairness_group_id=12,
-                          shuffle_validation=True,
+                          #shuffle_validation=True,
                           #train_best_with_full_data=True,
-                          consumed_energy_limit=0.0001
+                          #consumed_energy_limit=0.0001
                           )
 
         begin = time.time()
 
         best_result = search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=auc)
         print('time: ' + str(time.time() - begin))
-        print('energy: ' + str(search.tracker.final_emissions_data.energy_consumed))
+        #print('energy: ' + str(search.tracker.final_emissions_data.energy_consumed))
 
         #print(search.model_store)
 
