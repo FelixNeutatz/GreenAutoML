@@ -25,7 +25,6 @@ import multiprocessing
 import sklearn
 from fastsklearnfeature.declarative_automl.fair_data.test import get_X_y_id
 import traceback
-from functools import partial
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model_mine import optimize_accuracy_under_minimal_sample_ensemble
 
 
@@ -268,28 +267,6 @@ def run_AutoML(trial, my_scorer, specified_space=None):
     return {'objective': frequency, 'overfitting': overfitting}
 
 
-def run_AutoML_global(my_trial, my_scorer):
-    comparison = run_AutoML(my_trial, my_scorer)['objective']
-
-    # get all best validation scores and evaluate them
-    feature_list = []
-    target_list = []
-
-    feature_list.append(copy.deepcopy(my_trial.user_attrs['features']))
-    target_list.append(comparison)
-
-    dataset_name = ''
-    if 'dataset_id' in my_trial.params:
-        dataset_name = 'normal_' + str(my_trial.params['dataset_id'])
-    else:
-        dataset_name = 'fair_' + str(my_trial.params['dataset_id_fair'])
-
-    return {'feature_l': feature_list,
-            'target_l': target_list,
-            'group_l': dataset_name
-            }#,trial_id_l': trial_id}
-
-
 class Objective(object):
     def __init__(self, model_uncertainty, total_search_time, my_openml_tasks, my_openml_tasks_fair, feature_names, use_std=True):
         self.model_uncertainty = model_uncertainty
@@ -414,6 +391,8 @@ def sample_and_evaluate(my_id1):
     #assert len(X_meta) == len(y_meta), 'len(X) != len(y)'
 
     use_overfitting = np.random.choice([True, False])#True#np.random.choice([True, False])
+    if len(X_meta) < random_runs:
+        use_overfitting = False
     actual_y = 0.0
     overfitting_y = None
     #try:
@@ -600,12 +579,6 @@ def sample_configuration(trial, total_search_time, my_openml_tasks, my_openml_ta
         return None
     return features
 
-def random_config(trial, total_search_time, my_openml_tasks, my_openml_tasks_fair, feature_names):
-    features = sample_configuration(trial, total_search_time, my_openml_tasks, my_openml_tasks_fair, feature_names)
-    if type(features) == type(None):
-        return -1 * np.inf
-    return 0.0
-
 def init_pool_processes_p(my_lock_p,
                         starting_time_tt_p,
                         total_search_time_p,
@@ -614,7 +587,8 @@ def init_pool_processes_p(my_lock_p,
                         my_openml_tasks_p,
                         my_openml_tasks_fair_p,
                         feature_names_p,
-                        feature_names_new_p):
+                        feature_names_new_p,
+                        random_runs_p):
     '''Initialize each process with a global variable lock.
     '''
     global my_lock
@@ -626,6 +600,7 @@ def init_pool_processes_p(my_lock_p,
     global my_openml_tasks_fair
     global feature_names
     global feature_names_new
+    global random_runs
 
 
     my_lock = my_lock_p
@@ -637,6 +612,7 @@ def init_pool_processes_p(my_lock_p,
     my_openml_tasks_fair = my_openml_tasks_fair_p
     feature_names = feature_names_p
     feature_names_new = feature_names_new_p
+    random_runs = random_runs_p
 
 
 
@@ -666,22 +642,18 @@ if __name__ == "__main__":
 
     my_openml_tasks_fair = list(map_dataset.keys())
 
-
-
     my_scorer = make_scorer(balanced_accuracy_score)
 
 
     total_search_time = 5*60#60
     topk = 20#26 # 20
-    continue_from_checkpoint = False
+    random_runs = topk#10#(163)
 
     starting_time_tt = time.time()
 
     my_lock = Lock()
-
     mgr = mp.Manager()
     dictionary_felix = mgr.dict()
-
 
     my_list_constraints = ['global_search_time_constraint',
                                'global_evaluation_time_constraint',
@@ -706,61 +678,11 @@ if __name__ == "__main__":
 
     print(len(feature_names_new))
 
-    random_runs = 10#(163)
-
-
-
     X_meta = np.empty((0, len(feature_names_new)), dtype=float)
     y_meta = []
     group_meta = []
     y_overfit = []
     indices_overfit = []
-
-
-    #path2files = '/home/neutatz/phd2/decAutoML2weeks_compare2default/single_cpu_machine1_4D_start_and_class_imbalance'
-    path2files = '/home/neutatz/data/my_temp'
-
-
-    if continue_from_checkpoint:
-        with open(path2files + '/felix_X_compare_scaled.p', 'rb') as handle:
-            X_meta = pickle.load(handle)
-
-        with open(path2files + '/felix_y_compare_scaled.p', 'rb') as handle:
-            y_meta = pickle.load(handle)
-
-        with open(path2files + '/felix_group_compare_scaled.p', 'rb') as handle:
-            group_meta = pickle.load(handle)
-    else:
-        #cold start - random sampling
-        study_random = optuna.create_study(direction='maximize', sampler=RandomSampler(seed=42))
-        study_random.optimize(partial(random_config,
-                                      total_search_time=total_search_time,
-                                      my_openml_tasks=my_openml_tasks,
-                                      my_openml_tasks_fair=my_openml_tasks_fair,
-                                      feature_names=feature_names), n_trials=random_runs, n_jobs=1)
-
-        my_trials = []
-        trial_id2aqval = {}
-        counter_trial_id = 0
-        for u_trial in study_random.trials:
-            if u_trial.value == 0.0: #prune failed configurations
-                my_trials.append(u_trial)
-                trial_id2aqval[counter_trial_id] = 0.0
-                counter_trial_id += 1
-
-        with NestablePool(processes=topk) as pool:
-            results = pool.map(partial(run_AutoML_global, my_scorer=my_scorer), my_trials)
-
-        for result_p in results:
-            for f_progress in range(len(result_p['feature_l'])):
-                X_meta = np.vstack((X_meta, result_p['feature_l'][f_progress]))
-                y_meta.append(result_p['target_l'][f_progress])
-                group_meta.append(result_p['group_l'])
-
-        print('done')
-
-
-    assert len(X_meta) == len(y_meta)
 
     dictionary_felix['X_meta'] = X_meta
     dictionary_felix['y_meta'] = y_meta
@@ -769,7 +691,7 @@ if __name__ == "__main__":
     dictionary_felix['indices_overfit'] = indices_overfit
     dictionary_felix['training_done'] = False
 
-    with NestablePool(processes=topk, initializer=init_pool_processes_p, initargs=(my_lock,starting_time_tt, total_search_time, my_scorer, dictionary_felix, my_openml_tasks, my_openml_tasks_fair, feature_names, feature_names_new,)) as pool:
+    with NestablePool(processes=topk, initializer=init_pool_processes_p, initargs=(my_lock, starting_time_tt, total_search_time, my_scorer, dictionary_felix, my_openml_tasks, my_openml_tasks_fair, feature_names, feature_names_new, random_runs,)) as pool:
         results = pool.map(sample_and_evaluate, range(100000)) #100000
 
 
