@@ -26,7 +26,11 @@ from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model_m
 import getpass
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model_mine import generate_parameters_minimal_sample_constraints_all_emissions
 
-multiprocessing.set_start_method('fork')
+try:
+     multiprocessing.set_start_method('fork')
+except RuntimeError:
+    pass
+
 
 
 class NoDaemonProcess(multiprocessing.Process):
