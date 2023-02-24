@@ -80,7 +80,7 @@ if __name__ == "__main__":
                                               differential_privacy_epsilon=privacy,
                                               hold_out_fraction=0.33,
                                               max_ensemble_models=1,
-                                              train_best_with_full_data=True,
+                                              train_best_with_full_data=False,
                                               shuffle_validation=True
                                               )
 
