@@ -27,6 +27,10 @@ from fastsklearnfeature.declarative_automl.fair_data.test import get_X_y_id
 import traceback
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model_mine import optimize_accuracy_under_minimal_sample_ensemble
 
+try:
+     multiprocessing.set_start_method('spawn', force=True)
+except RuntimeError:
+    pass
 
 class NoDaemonProcess(multiprocessing.Process):
     @property
@@ -231,7 +235,8 @@ def run_AutoML(trial, my_scorer, specified_space=None):
                               pipeline_size_limit=pipeline_size_limit,
                               fairness_limit=fairness_limit,
                               fairness_group_id=sensitive_attribute_id,
-                              consumed_energy_limit=consumed_energy_limit
+                              consumed_energy_limit=consumed_energy_limit,
+                              max_ensemble_models=1
                               )
         else:
             search_static = MyAutoML(n_jobs=1,
@@ -244,7 +249,8 @@ def run_AutoML(trial, my_scorer, specified_space=None):
                                      training_time_limit=training_time_limit,
                                      inference_time_limit=inference_time_limit,
                                      pipeline_size_limit=pipeline_size_limit,
-                                     consumed_energy_limit=consumed_energy_limit
+                                     consumed_energy_limit=consumed_energy_limit,
+                                     max_ensemble_models=1
                                      )
 
         try:
@@ -344,7 +350,7 @@ def get_best_random_trial(total_search_time, my_openml_tasks, my_openml_tasks_fa
     return study_uncertainty.best_trial
 
 def sample_and_evaluate(my_id1):
-    if time.time() - starting_time_tt > 60*60*24*1: # 60*60*24*7
+    if time.time() - starting_time_tt > 60*60*24*7: # 60*60*24*7
 
         my_lock.acquire()
         if not dictionary_felix['training_done']:
