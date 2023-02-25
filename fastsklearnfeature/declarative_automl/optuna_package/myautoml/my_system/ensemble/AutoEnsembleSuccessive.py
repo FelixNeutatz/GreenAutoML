@@ -17,7 +17,6 @@ from fastsklearnfeature.declarative_automl.optuna_package.classifiers.LinearDisc
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.multiclass.OneVsRestClassifierOptuna import OneVsRestClassifierOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.categorical_encoding.LabelEncoderOptuna import LabelEncoderOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.categorical_encoding.OneHotEncoderOptuna import OneHotEncoderOptuna
-from fastsklearnfeature.declarative_automl.optuna_package.classifiers.TabPFNClassifierOptuna import TabPFNClassifierOptuna
 #from fastsklearnfeature.declarative_automl.optuna_package.bagging.BaggingFeaturesOptuna import BaggingFeaturesOptuna
 from codecarbon import EmissionsTracker
 
@@ -34,11 +33,10 @@ from autosklearn.ensembles.ensemble_selection import EnsembleSelection
 from autosklearn.metrics import balanced_accuracy as ba
 from autosklearn.constants import MULTICLASS_CLASSIFICATION
 import traceback
-import torch.multiprocessing
-torch.multiprocessing.set_sharing_strategy('file_system')
-from torch.multiprocessing import Pool, Process, set_start_method, Manager
+from multiprocessing import Process, set_start_method, Manager
+
 try:
-     set_start_method('spawn')
+     set_start_method('fork', force=True)
 except RuntimeError:
     pass
 
@@ -330,7 +328,7 @@ def evaluatePipeline(key, return_dict):
         current_size_iter = 0
 
         return_dict[key + 'intermediate_results'] = {}
-        print('trial: ' + str(trial))
+        #print('trial: ' + str(trial))
 
         p_new = copy.deepcopy(p)
 
@@ -364,7 +362,7 @@ def evaluatePipeline(key, return_dict):
                         p.steps.pop(element_step_i)
                         break
 
-            print('new steps: ' + str(p.steps))
+            #print('new steps: ' + str(p.steps))
 
 
             if not has_iterative_fit(p):
@@ -746,7 +744,6 @@ class MyAutoML:
                         isinstance(classifier, PrivateGaussianNBOptuna) or \
                         isinstance(classifier, MLPClassifierOptuna) or \
                         isinstance(classifier, LinearDiscriminantAnalysisOptuna) or \
-                        isinstance(classifier, TabPFNClassifierOptuna) or \
                         multi_class_support == 'one_vs_rest':
                     pass
                 else:
@@ -935,7 +932,7 @@ class MyAutoML:
 
                 if self.use_incremental_data:
                     current_size_iter = 0
-                    print('return: ' + str(return_dict))
+                    #print('return: ' + str(return_dict))
                     while key + 'intermediate_results_' + str(current_size_iter) in return_dict:
                         trial.report(return_dict[key + 'intermediate_results_' + str(current_size_iter)], current_size_iter)
                         if trial.should_prune():

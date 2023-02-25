@@ -18,7 +18,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.ensemble import RandomForestClassifier
-from fastsklearnfeature.declarative_automl.optuna_package.classifiers.TabPFNClassifierOptuna import TabPFNClassifierOptuna
+#from fastsklearnfeature.declarative_automl.optuna_package.classifiers.TabPFNClassifierOptuna import TabPFNClassifierOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.LinearSVCOptuna import LinearSVCOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.PassiveAggressiveOptuna import PassiveAggressiveOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.SGDClassifierOptuna import SGDClassifierOptuna
@@ -41,8 +41,7 @@ available_models = [AdaBoostClassifier(),
                             QuadraticDiscriminantAnalysis(),
                             RandomForestClassifier(),
                             SGDClassifierOptuna(),
-                            SVCOptuna(),
-                            TabPFNClassifierOptuna(device='cpu', N_ensemble_configurations=32)
+                            SVCOptuna(), #TabPFNClassifierOptuna(device='cpu', N_ensemble_configurations=32)
                             ]
 
 class BaggingFeaturesOptuna(TransformerMixin, BaseEstimator):

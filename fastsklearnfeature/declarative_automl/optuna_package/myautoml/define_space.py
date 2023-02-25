@@ -20,7 +20,7 @@ from fastsklearnfeature.declarative_automl.optuna_package.classifiers.SGDClassif
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.SVCOptuna import SVCOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.MLPClassifierOptuna import MLPClassifierOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.LinearDiscriminantAnalysisOptuna import LinearDiscriminantAnalysisOptuna
-from fastsklearnfeature.declarative_automl.optuna_package.classifiers.TabPFNClassifierOptuna import TabPFNClassifierOptuna
+#from fastsklearnfeature.declarative_automl.optuna_package.classifiers.TabPFNClassifierOptuna import TabPFNClassifierOptuna
 
 from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.scaling.MinMaxScalerOptuna import MinMaxScalerOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.scaling.NormalizerOptuna import NormalizerOptuna
@@ -48,8 +48,7 @@ from fastsklearnfeature.declarative_automl.optuna_package.augmentation.RandomOve
 from fastsklearnfeature.declarative_automl.optuna_package.augmentation.SMOTEOptuna import SMOTEOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.augmentation.ADASYNOptuna import ADASYNOptuna
 
-classifier_list = [RandomForestClassifierOptuna(),
-                                TabPFNClassifierOptuna(),
+classifier_list = [RandomForestClassifierOptuna(),#TabPFNClassifierOptuna(),
                                 AdaBoostClassifierOptuna(),
                                 BernoulliNBOptuna(),
                                 DecisionTreeClassifierOptuna(),
