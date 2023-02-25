@@ -28,7 +28,7 @@ import traceback
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model_mine import optimize_accuracy_under_minimal_sample_ensemble
 
 try:
-     multiprocessing.set_start_method('spawn', force=True)
+     multiprocessing.set_start_method('fork', force=True)
 except RuntimeError:
     pass
 
@@ -236,7 +236,8 @@ def run_AutoML(trial, my_scorer, specified_space=None):
                               fairness_limit=fairness_limit,
                               fairness_group_id=sensitive_attribute_id,
                               consumed_energy_limit=consumed_energy_limit,
-                              max_ensemble_models=1
+                              max_ensemble_models=1,
+                              shuffle_validation=True
                               )
         else:
             search_static = MyAutoML(n_jobs=1,
@@ -250,7 +251,8 @@ def run_AutoML(trial, my_scorer, specified_space=None):
                                      inference_time_limit=inference_time_limit,
                                      pipeline_size_limit=pipeline_size_limit,
                                      consumed_energy_limit=consumed_energy_limit,
-                                     max_ensemble_models=1
+                                     max_ensemble_models=1,
+                                     shuffle_validation=True
                                      )
 
         try:
