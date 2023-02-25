@@ -80,8 +80,6 @@ if __name__ == "__main__":
                                               differential_privacy_epsilon=privacy,
                                               hold_out_fraction=0.33,
                                               max_ensemble_models=1,
-                                              train_best_with_full_data=True,
-                                              shuffle_validation=False
                                               )
 
                     best_result = search_default.fit(X_train_hold, y_train_hold, categorical_indicator=categorical_indicator_hold, scorer=my_scorer)
