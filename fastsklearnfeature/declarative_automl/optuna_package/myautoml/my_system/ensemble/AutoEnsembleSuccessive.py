@@ -19,6 +19,7 @@ from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.cat
 from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.categorical_encoding.OneHotEncoderOptuna import OneHotEncoderOptuna
 #from fastsklearnfeature.declarative_automl.optuna_package.bagging.BaggingFeaturesOptuna import BaggingFeaturesOptuna
 from codecarbon import EmissionsTracker
+from sklearn.preprocessing import minmax_scale
 
 import pandas as pd
 import time
@@ -297,6 +298,8 @@ def evaluatePipeline(key, return_dict):
 
         dummy_result = return_dict['dummy_result']
 
+        caruana_ensemble = return_dict['caruana_ensemble']
+
         trial = None
         if 'trial' in return_dict:
             trial = return_dict['trial']
@@ -392,7 +395,7 @@ def evaluatePipeline(key, return_dict):
                         for k_return, val_return in new_return_dict.items():
                             return_dict[k_return] = val_return
 
-                        if max_ensemble_models > 1:
+                        if max_ensemble_models > 1 and caruana_ensemble:
                             start_inference_val_time = time.time()
                             return_dict[key + 'val_predictions'] = p.predict_proba(X_test)
                             return_dict[key + 'val_predictions_time'] = time.time() - start_inference_val_time
@@ -441,7 +444,7 @@ def evaluatePipeline(key, return_dict):
                             for k_return, val_return in new_return_dict.items():
                                 return_dict[k_return] = val_return
 
-                            if max_ensemble_models > 1:
+                            if max_ensemble_models > 1 and caruana_ensemble:
                                 start_inference_val_time = time.time()
                                 return_dict[key + 'val_predictions'] = p.predict_proba(X_test)
                                 return_dict[key + 'val_predictions_time'] = time.time() - start_inference_val_time
@@ -539,7 +542,8 @@ class MyAutoML:
                  use_incremental_data=True,
                  shuffle_validation=False,
                  train_best_with_full_data=False,
-                 consumed_energy_limit=None
+                 consumed_energy_limit=None,
+                 caruana_ensemble=True
                  ):
         self.cv = cv
         self.time_search_budget = time_search_budget
@@ -585,6 +589,7 @@ class MyAutoML:
 
         self.max_ensemble_models = max_ensemble_models
         self.ensemble_selection = None
+        self.caruana_ensemble = caruana_ensemble
 
         self.dummy_result = -1
 
@@ -603,12 +608,39 @@ class MyAutoML:
 
 
     def predict(self, X):
-        if type(None) == type(self.ensemble_store):
+        if self.max_ensemble_models == 1 or (self.caruana_ensemble and type(None) == type(self.ensemble_store)):
             print('single_predict')
             return self.get_best_pipeline().predict(X)
         else:
-            print('ensemble_predict')
-            return self.ensemble_store.predict(X)
+            if self.caruana_ensemble:
+                print('ensemble_predict')
+                return self.ensemble_store.predict(X)
+            else:
+                print('my ensemble')
+                model_list = []
+                accuracy_list = []
+                for model_name, v in self.model_store.items():
+                    model_list.append(v[0])
+                    accuracy_list.append(v[1])
+                accuracy_list.append(self.dummy_result)
+
+                accuracy_list_scaled = minmax_scale(accuracy_list)[:-1]
+                accuracy_list_scaled /= np.sum(accuracy_list_scaled)
+
+                weights = np.zeros((len(accuracy_list_scaled),), dtype=np.float64,)
+
+                for ii in range(len(weights)):
+                    weights[ii] = accuracy_list_scaled[ii]
+
+                es = EnsembleSelection(ensemble_size=len(model_list),
+                                  task_type=MULTICLASS_CLASSIFICATION,
+                                  random_state=0,
+                                  metric=ba)
+                es.weights_ = weights
+                es.num_input_models_ = len(model_list)
+
+                return EnsembleClassifier(models=model_list,ensemble_selection=es).predict(X)
+
 
 
 
@@ -674,6 +706,7 @@ class MyAutoML:
             return_dict['model_store'] = {}
             return_dict['max_ensemble_models'] = 1
             return_dict['dummy_result'] = 0.0
+            return_dict['caruana_ensemble'] = self.caruana_ensemble
 
             try:
                 return_dict['study_best_value'] = self.study.best_value
@@ -840,6 +873,7 @@ class MyAutoML:
                 return_dict['max_ensemble_models'] = self.max_ensemble_models
                 return_dict['model_store'] = self.model_store
                 return_dict['dummy_result'] = self.dummy_result
+                return_dict['caruana_ensemble'] = self.caruana_ensemble
 
                 return_dict['trial'] = trial
 
@@ -1060,9 +1094,10 @@ if __name__ == "__main__":
                           #pipeline_size_limit=10000
                           #fairness_limit=0.95,
                           #fairness_group_id=12,
-                          #shuffle_validation=True,
+                          shuffle_validation=True,
                           #train_best_with_full_data=True,
-                          #consumed_energy_limit=0.0001
+                          #consumed_energy_limit=0.0001,
+                          caruana_ensemble=False
                           )
 
         begin = time.time()

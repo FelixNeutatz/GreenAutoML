@@ -79,9 +79,9 @@ if __name__ == "__main__":
                                               main_memory_budget_gb=memory_budget,
                                               differential_privacy_epsilon=privacy,
                                               hold_out_fraction=0.33,
-                                              max_ensemble_models=1,
+                                              max_ensemble_models=50,
                                               shuffle_validation=True,
-                                              train_best_with_full_data=True
+                                              caruana_ensemble=False
                                               )
 
                     best_result = search_default.fit(X_train_hold, y_train_hold, categorical_indicator=categorical_indicator_hold, scorer=my_scorer)
