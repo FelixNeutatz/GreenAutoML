@@ -51,7 +51,8 @@ if __name__ == "__main__":
 
         new_constraint_evaluation_dynamic_all = []
 
-        for minutes_to_search in [5*60]:#[1, 5, 10, 60]:#range(1, 6):
+        #for minutes_to_search in [5*60]:#[1, 5, 10, 60]:#range(1, 6):
+        for minutes_to_search in [10, 30, 60, 5*60]:
 
             current_dynamic = []
 
@@ -79,9 +80,8 @@ if __name__ == "__main__":
                                               main_memory_budget_gb=memory_budget,
                                               differential_privacy_epsilon=privacy,
                                               hold_out_fraction=0.33,
-                                              max_ensemble_models=50,
-                                              shuffle_validation=True,
-                                              caruana_ensemble=False
+                                              max_ensemble_models=1,
+                                              shuffle_validation=True
                                               )
 
                     best_result = search_default.fit(X_train_hold, y_train_hold, categorical_indicator=categorical_indicator_hold, scorer=my_scorer)

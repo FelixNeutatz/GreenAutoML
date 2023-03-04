@@ -12,7 +12,7 @@ outputname = 'static_ensemble'
 
 conda_name = 'GreenAutoMLD'
 
-parallelism = 20#20#15#multiprocessing.cpu_count()
+parallelism = 1#20#20#15#multiprocessing.cpu_count()
 server = libtmux.Server()
 
 data_id = 0
