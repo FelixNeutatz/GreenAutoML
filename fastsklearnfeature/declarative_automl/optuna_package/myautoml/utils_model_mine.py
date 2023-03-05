@@ -2307,13 +2307,14 @@ def utils_run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None
                       fairness_limit=fairness_limit,
                       fairness_group_id=fairness_group_id
                       )
-    search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
-
-    best_pipeline = search.get_best_pipeline()
 
     test_score = 0.0
-    if type(best_pipeline) != type(None):
-        test_score = my_scorer(search.get_best_pipeline(), X_test, y_test)
+    try:
+        search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
+        y_hat_test = search.predict(X_test)
+        test_score = balanced_accuracy_score(y_test, y_hat_test)
+    except:
+        pass
 
 
     return test_score, search

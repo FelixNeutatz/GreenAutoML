@@ -53,16 +53,23 @@ for test_holdout_dataset_id in [args.dataset]:
     model_success = pickle.load(open('/home/' + getpass.getuser() + '/data/my_temp/my_great_model_compare_scaled.p', "rb"))
 
     my_list_constraints = ['global_search_time_constraint',
-                           'global_evaluation_time_constraint',
-                           'global_memory_constraint',
-                           'global_cv',
-                           'global_number_cv',
-                           'privacy',
-                           'hold_out_fraction',
-                           'sample_fraction',
-                           'training_time_constraint',
-                           'inference_time_constraint',
-                           'pipeline_size_constraint']
+                               'global_evaluation_time_constraint',
+                               'global_memory_constraint',
+                               'global_cv',
+                               'global_number_cv',
+                               'privacy',
+                               'hold_out_fraction',
+                               'sample_fraction',
+                               'training_time_constraint',
+                               'inference_time_constraint',
+                               'pipeline_size_constraint',
+                               'fairness_constraint',
+                               'use_ensemble',
+                               'use_incremental_data',
+                               'shuffle_validation',
+                               'train_best_with_full_data',
+                               'consumed_energy_limit'
+                           ]
 
     _, feature_names = get_feature_names(my_list_constraints)
 
@@ -136,8 +143,7 @@ for test_holdout_dataset_id in [args.dataset]:
                                               hold_out_fraction=0.33)
 
                     best_result = search_default.fit(X_train_hold, y_train_hold, categorical_indicator=categorical_indicator_hold, scorer=my_scorer)
-                    search_default.ensemble(X_train_hold, y_train_hold)
-                    y_hat_test = search_default.ensemble_predict(X_test_hold)
+                    y_hat_test = search_default.predict(X_test_hold)
                     result = balanced_accuracy_score(y_test_hold, y_hat_test)
 
                 new_constraint_evaluation_dynamic.append(ConstraintRun(space_str=space2str(space.parameter_tree), params=mp_global.study_prune.best_trial.params, test_score=result, estimated_score=mp_global.study_prune.best_trial.value))

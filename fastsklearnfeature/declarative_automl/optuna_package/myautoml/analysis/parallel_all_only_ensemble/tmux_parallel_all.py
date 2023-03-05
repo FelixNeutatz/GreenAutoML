@@ -8,10 +8,10 @@ datasets = [168794, 168797, 168796, 189871, 189861, 167185, 189872, 189908, 7510
 
 
 
-program = '/home/' + getpass.getuser() + '/Software/DeclarativeAutoML/fastsklearnfeature/declarative_automl/optuna_package/myautoml/analysis/parallel_all_only_ensemble/check_model_parallel_per_data_minimum_all1.py'
+program = '/home/' + getpass.getuser() + '/Software/GreenAutoML/fastsklearnfeature/declarative_automl/optuna_package/myautoml/analysis/parallel_all_only_ensemble/check_model_parallel_per_data_minimum_all1.py'
 outputname = 'ensemble'
 
-conda_name = 'AutoMLD'
+conda_name = 'GreenAutoMLD'
 
 parallelism = 20#15#multiprocessing.cpu_count()
 server = libtmux.Server()
@@ -23,7 +23,7 @@ finished = []
 session = server.new_session(session_name="install", kill_session=True, attach=False)
 session.attached_pane.send_keys('exec bash')
 session.attached_pane.send_keys('conda activate ' + conda_name)
-session.attached_pane.send_keys('cd /home/' + getpass.getuser() + '/Software/DeclarativeAutoML')
+session.attached_pane.send_keys('cd /home/' + getpass.getuser() + '/Software/GreenAutoML')
 #session.attached_pane.send_keys('git pull origin main')
 #session.attached_pane.send_keys('python -m pip install .')
 
@@ -37,7 +37,7 @@ while len(finished) < len(datasets):
         running_ids.append(datasets[data_id])
         session.attached_pane.send_keys('exec bash')
         session.attached_pane.send_keys('conda activate ' + conda_name)
-        session.attached_pane.send_keys('cd /home/' + getpass.getuser() + '/Software/DeclarativeAutoML')
+        session.attached_pane.send_keys('cd /home/' + getpass.getuser() + '/Software/GreenAutoML')
         session.attached_pane.send_keys('python ' + program + ' -d ' + str(datasets[data_id]) + ' -o ' + str(outputname))
         data_id += 1
 
