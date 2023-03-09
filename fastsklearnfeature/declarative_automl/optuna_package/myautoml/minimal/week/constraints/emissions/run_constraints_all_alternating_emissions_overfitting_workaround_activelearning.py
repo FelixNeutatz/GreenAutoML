@@ -352,7 +352,7 @@ def get_best_random_trial(total_search_time, my_openml_tasks, my_openml_tasks_fa
     return study_uncertainty.best_trial
 
 def sample_and_evaluate(my_id1):
-    if time.time() - starting_time_tt > 60*60*24*7: # 60*60*24*7
+    if time.time() - starting_time_tt > 60*60*24*14: # 60*60*24*7
 
         my_lock.acquire()
         if not dictionary_felix['training_done']:
