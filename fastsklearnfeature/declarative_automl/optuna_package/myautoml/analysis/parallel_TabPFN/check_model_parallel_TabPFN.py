@@ -64,9 +64,9 @@ for test_holdout_dataset_id in [args.dataset]:
 
                 classifier = TabPFNClassifierOptuna(N_ensemble_configurations=32)
                 classifier.fit(X_train_hold, y_train_hold)
-
-                tracker.stop()
                 y_hat = classifier.predict(X_test_hold)
+                tracker.stop()
+
 
                 print("Predictions:  \n", y_hat)
 
