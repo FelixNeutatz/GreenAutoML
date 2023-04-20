@@ -81,7 +81,8 @@ for day in [14]:
     best_trials = []
     study = None
 
-    for folds in [5, 10, 224]:
+    #for folds in [5, 10, 224]:
+    for folds in [224]:
 
         def objective(trial, folds):
 
