@@ -5,7 +5,6 @@ import pickle
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model_mine import get_feature_names
 import openml
 from sklearn.ensemble import RandomForestClassifier
-import xgboost as xgb
 import pickle
 from sklearn.model_selection import GroupKFold
 from sklearn.metrics import f1_score
@@ -34,19 +33,19 @@ for discrete in [1.0]:
 
     for day in [14]:
 
-        
+
         X_old = pickle.load(open('/home/' + getpass.getuser() + '/data/my_temp/felix_X_compare_scaled.p', "rb"))
         X = X_old
         y = pickle.load(open('/home/' + getpass.getuser() + '/data/my_temp/felix_y_compare_scaled.p', "rb"))
         groups = pickle.load(open('/home/' + getpass.getuser() + '/data/my_temp/felix_group_compare_scaled.p', "rb"))
 
 
-        '''
-        X_old = pickle.load(open('/home/felix/phd2/dec_automl/dec25_2weeks_alternating/felix_X_compare_scaled.p', "rb"))
-        X = X_old
-        y = pickle.load(open('/home/felix/phd2/dec_automl/dec25_2weeks_alternating/felix_y_compare_scaled.p', "rb"))
-        groups = pickle.load(open('/home/felix/phd2/dec_automl/dec25_2weeks_alternating/felix_group_compare_scaled.p', "rb"))
-        '''
+
+        #X_old = pickle.load(open('/home/felix/phd2/dec_automl/march28_2week_alternating_green/felix_X_compare_scaled.p', "rb"))
+        #X = X_old
+        #y = pickle.load(open('/home/felix/phd2/dec_automl/march28_2week_alternating_green/felix_y_compare_scaled.p', "rb"))
+        #groups = pickle.load(open('/home/felix/phd2/dec_automl/march28_2week_alternating_green/felix_group_compare_scaled.p', "rb"))
+
 
         print(np.unique(y))
 
@@ -108,12 +107,15 @@ for discrete in [1.0]:
                 if trial.suggest_categorical("use_max_depth", [True, False]):
                     max_depth = trial.suggest_int("max_depth", 1, 150, log=True)
 
+                class_weight = trial.suggest_categorical("class_weight", ['balanced', 'balanced_subsample', None])
+
                 model_success = RandomForestClassifier(n_estimators=trial.suggest_int('n_estimators', 1, 1000, log=True),
                                                       bootstrap=trial.suggest_categorical("bootstrap", [True, False]),
                                                       min_samples_split=trial.suggest_int("min_samples_split", 2, 20),
                                                       min_samples_leaf=trial.suggest_int("min_samples_leaf", 1, 20),
                                                       max_features=trial.suggest_float("max_features", 0.0, 1.0),
                                                       max_depth=max_depth,
+                                                      class_weight=class_weight,
                                                       random_state=42, n_jobs=-1)
 
                 group_kfold = GroupKFold(n_splits=folds)
@@ -167,6 +169,7 @@ for discrete in [1.0]:
                                                   min_samples_split=study.best_params['min_samples_split'],
                                                   min_samples_leaf=study.best_params['min_samples_leaf'],
                                                   max_features=study.best_params['max_features'],
+                                                  class_weight=study.best_params['class_weight'],
                                                   max_depth=max_depth,
                                                   random_state=42, n_jobs=-1)
         model_success.fit(X, np.array(y) >= discrete)
