@@ -72,12 +72,16 @@ for test_holdout_dataset_id in [args.dataset]:
 
                 predictor = TabularPredictor(label=label, eval_metric='balanced_accuracy', path=tmp_path).fit(train_data=my_data_train, time_limit=search_time_frozen, presets='best_quality', num_cpus=1)
                 tracker.stop()
+
+                tracker_inference = EmissionsTracker(save_to_file=False)
+                tracker_inference.start()
                 y_hat = predictor.predict(my_data_test)
+                tracker_inference.stop()
                 print("Predictions:  \n", y_hat)
 
                 result = balanced_accuracy_score(y_test_hold, y_hat)
 
-                new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values))
+                new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values, tracker_inference=tracker_inference.final_emissions_data.values, len_pred=len(X_test_hold)))
             except Exception as e:
                 traceback.print_exc()
                 print(e)
