@@ -64,15 +64,19 @@ for test_holdout_dataset_id in [args.dataset]:
 
                 classifier = TabPFNClassifierOptuna(N_ensemble_configurations=32)
                 classifier.fit(X_train_hold, y_train_hold)
-                y_hat = classifier.predict(X_test_hold)
                 tracker.stop()
+
+                tracker_inference = EmissionsTracker(save_to_file=False)
+                tracker_inference.start()
+                y_hat = classifier.predict(X_test_hold)
+                tracker_inference.stop()
 
 
                 print("Predictions:  \n", y_hat)
 
                 result = balanced_accuracy_score(y_test_hold, y_hat)
 
-                new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values))
+                new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values, tracker_inference=tracker_inference.final_emissions_data.values, len_pred=len(X_test_hold)))
             except Exception as e:
                 traceback.print_exc()
                 print(e)
