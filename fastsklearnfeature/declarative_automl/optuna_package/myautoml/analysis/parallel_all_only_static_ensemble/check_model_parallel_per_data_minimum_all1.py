@@ -73,7 +73,7 @@ if __name__ == "__main__":
                     tracker = EmissionsTracker(save_to_file=False)
                     tracker.start()
 
-                    search_default = AutoEn(n_jobs=28,
+                    search_default = AutoEn(n_jobs=1,
                                               time_search_budget=search_time_frozen,
                                               space=space,
                                               evaluation_budget=int(0.1 * search_time_frozen),
@@ -85,13 +85,14 @@ if __name__ == "__main__":
                                               )
 
                     best_result = search_default.fit(X_train_hold, y_train_hold, categorical_indicator=categorical_indicator_hold, scorer=my_scorer)
-
                     tracker.stop()
 
+                    tracker_inference = EmissionsTracker(save_to_file=False)
                     y_hat_test = search_default.predict(X_test_hold)
+                    tracker_inference.stop()
                     result = balanced_accuracy_score(y_test_hold, y_hat_test)
 
-                    new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values))
+                    new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values, tracker_inference=tracker_inference.final_emissions_data.values, len_pred=len(X_test_hold)))
                 except Exception as e:
                     print(str(e) + '\n\n')
                     traceback.print_exc()
