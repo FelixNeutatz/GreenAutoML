@@ -88,6 +88,7 @@ if __name__ == "__main__":
                     tracker.stop()
 
                     tracker_inference = EmissionsTracker(save_to_file=False)
+                    tracker_inference.start()
                     y_hat_test = search_default.predict(X_test_hold)
                     tracker_inference.stop()
                     result = balanced_accuracy_score(y_test_hold, y_hat_test)
