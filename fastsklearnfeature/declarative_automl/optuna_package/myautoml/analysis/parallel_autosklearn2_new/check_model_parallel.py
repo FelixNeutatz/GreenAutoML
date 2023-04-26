@@ -40,10 +40,11 @@ for test_holdout_dataset_id in [args.dataset]:
 
     new_constraint_evaluation_dynamic_all = []
 
-    for minutes_to_search in [10, 30, 60, 5*60]:
+    for minutes_to_search in [10, 30, 60, 5 * 60]:
+        # for minutes_to_search in [5 * 60]:
 
         current_dynamic = []
-        search_time_frozen = minutes_to_search * 60
+        search_time_frozen = minutes_to_search  # * 60
         new_constraint_evaluation_dynamic = ConstraintEvaluation(dataset=test_holdout_dataset_id,
                                                                  constraint={'search_time': minutes_to_search},
                                                                  system_def='dynamic')
@@ -81,11 +82,14 @@ for test_holdout_dataset_id in [args.dataset]:
 
                 tracker.stop()
 
+                tracker_inference = EmissionsTracker(save_to_file=False)
+                tracker_inference.start()
                 y_hat = automl.predict(X_test_hold)
+                tracker_inference.stop()
                 result = balanced_accuracy_score(y_test_hold, y_hat)
 
 
-                new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values))
+                new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values, tracker_inference=tracker_inference.final_emissions_data.values, len_pred=len(X_test_hold)))
             except Exception as e:
                 traceback.print_exc()
                 print(e)
