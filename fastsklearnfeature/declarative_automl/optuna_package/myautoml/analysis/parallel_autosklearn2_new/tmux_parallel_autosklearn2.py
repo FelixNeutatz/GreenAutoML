@@ -10,7 +10,7 @@ datasets = [168794, 168797, 168796, 189871, 189861, 167185, 189872, 189908, 7510
 program = '/home/neutatz/Software/GreenAutoML/fastsklearnfeature/declarative_automl/optuna_package/myautoml/analysis/parallel_autosklearn2_new/check_model_parallel.py'
 outputname = 'autosklearn2'
 
-conda_name = 'GreenAutoMLD'
+conda_name = 'green2' #'GreenAutoMLD'
 
 parallelism = 1#15#multiprocessing.cpu_count()
 server = libtmux.Server()
