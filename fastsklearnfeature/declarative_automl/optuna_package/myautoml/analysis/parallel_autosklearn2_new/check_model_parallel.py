@@ -13,6 +13,8 @@ import time
 import os
 import shutil
 import traceback
+import autosklearn.classification
+
 
 openml.config.apikey = '4384bd56dad8c3d2c0f6630c52ef5567'
 openml.config.cache_directory = '/home/neutatz/phd2/cache_openml'
@@ -65,6 +67,7 @@ for test_holdout_dataset_id in [args.dataset]:
                     else:
                         feat_type.append('Numerical')
 
+                '''
                 automl = AutoSklearn2Classifier(
                     time_left_for_this_task=search_time_frozen,
                     delete_tmp_folder_after_terminate=True,
@@ -73,6 +76,13 @@ for test_holdout_dataset_id in [args.dataset]:
                     memory_limit=1024 * 250,
                     tmp_folder=tmp_path
                 )
+                '''
+                automl = autosklearn.classification.AutoSklearnClassifier(time_left_for_this_task=search_time_frozen,
+                    delete_tmp_folder_after_terminate=True,
+                    metric=balanced_accuracy,
+                    seed=repeat,
+                    memory_limit=1024 * 250,
+                    tmp_folder=tmp_path)
 
                 X_train_sample = X_train_hold
                 y_train_sample = y_train_hold
