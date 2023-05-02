@@ -2437,6 +2437,7 @@ def utils_run_AutoML_ensemble_from_features(X_train=None, X_test=None, y_train=N
     use_incremental_data = int(features[feature_names.index('use_incremental_data')]) == 1
 
     shuffle_validation = int(features[feature_names.index('shuffle_validation')]) == 1
+    train_best_with_full_data = int(features[feature_names.index('train_best_with_full_data')]) == 1
 
     from fastsklearnfeature.declarative_automl.optuna_package.myautoml.my_system.ensemble.AutoEnsembleSuccessive import MyAutoML as AutoEnsembleML
     search = AutoEnsembleML(cv=cv,
@@ -2456,14 +2457,15 @@ def utils_run_AutoML_ensemble_from_features(X_train=None, X_test=None, y_train=N
                       fairness_group_id=fairness_group_id,
                       max_ensemble_models=ensemble_size,
                       use_incremental_data=use_incremental_data,
-                      shuffle_validation=shuffle_validation
+                      shuffle_validation=shuffle_validation,
+                      train_best_with_full_data=train_best_with_full_data
                       )
     search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
 
     test_score = 0.0
     try:
-        search.ensemble(X_train, y_train)
-        y_hat_test = search.ensemble_predict(X_test)
+        search.fit(X_train, y_train)
+        y_hat_test = search.predict(X_test)
         test_score = balanced_accuracy_score(y_test, y_hat_test)
     except:
         pass
