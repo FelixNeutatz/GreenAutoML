@@ -130,7 +130,8 @@ def evaluatePipeline(return_dict):
     tmp_path = "/home/" + getpass.getuser() + "/data/auto_tmp/autosklearn" + str(time.time()) + '_' + str(
         np.random.randint(1000)) + 'folder'
 
-    try:
+    #try:
+    if True:
         tracker = EmissionsTracker(save_to_file=False)
         tracker.start()
 
@@ -176,6 +177,7 @@ def evaluatePipeline(return_dict):
         return_dict['tracker'] = tracker.final_emissions_data.values
         return_dict['tracker_inference'] = tracker_inference.final_emissions_data.values
         return_dict['len_pred'] = len(X_test_hold)
+    '''
     except Exception as e:
         traceback.print_exc()
         print(e)
@@ -187,6 +189,7 @@ def evaluatePipeline(return_dict):
         if os.path.exists(tmp_path) and os.path.isdir(tmp_path):
             # shutil.rmtree(tmp_path)
             os.system('rm -fr "%s"' % tmp_path)
+    '''
 
 if __name__ == "__main__":
 
