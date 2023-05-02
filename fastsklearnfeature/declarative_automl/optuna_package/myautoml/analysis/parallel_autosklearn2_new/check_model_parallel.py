@@ -128,7 +128,7 @@ if __name__ == "__main__":
         new_constraint_evaluation_dynamic_all = []
 
         #for minutes_to_search in [10, 30, 60, 5 * 60]:
-        for minutes_to_search in [30, 60]:
+        for minutes_to_search in [30, 60, 5 * 60]:
             # for minutes_to_search in [5 * 60]:
 
             current_dynamic = []
@@ -194,7 +194,8 @@ if __name__ == "__main__":
                     new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'shit happened', result, more='test'))
                 finally:
                     if os.path.exists(tmp_path) and os.path.isdir(tmp_path):
-                        shutil.rmtree(tmp_path)
+                        #shutil.rmtree(tmp_path)
+                        os.system('rm -fr "%s"' % tmp_path)
 
                 current_dynamic.append(result)
                 print('dynamic: ' + str(current_dynamic))
