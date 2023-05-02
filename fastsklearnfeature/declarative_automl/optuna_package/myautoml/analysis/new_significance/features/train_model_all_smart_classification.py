@@ -29,7 +29,7 @@ openml.config.cache_directory = '/home/' + getpass.getuser() + '/phd2/cache_open
 #groups = pickle.load(open('/home/neutatz/phd2/decAutoML2weeks_compare2default/okt1_2week_constraint_model/felix_group_compare_scaled.p', "rb"))
 
 #for discrete in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]:
-for discrete in [1.0]:
+for discrete in [0.1]:
 
     for day in [14]:
 
