@@ -84,7 +84,9 @@ for test_holdout_dataset_id in [args.dataset]:
                            'fairness_constraint',
                            'use_ensemble',
                            'use_incremental_data',
-                           'shuffle_validation'
+                           'shuffle_validation',
+                           'train_best_with_full_data',
+                           'consumed_energy_limit'
                            ]
 
     metafeature_names_new = ['ClassEntropy', 'NumSymbols', 'SymbolsSum', 'SymbolsSTD', 'SymbolsMean', 'SymbolsMax',
@@ -109,6 +111,7 @@ for test_holdout_dataset_id in [args.dataset]:
     inference_time_limit = None
     pipeline_size_limit = None
     fairness_limit = None
+    consumed_energy_limit = None
 
     #for minutes_to_search in [10, 30, 1*60, 5*60, 10*60, 60*60]:#[1, 5]:#range(1, 6):
     for minutes_to_search in [10, 30, 1*60, 5*60]:
@@ -139,6 +142,7 @@ for test_holdout_dataset_id in [args.dataset]:
             random_configs[:, feature_names.index('inference_time_constraint')] = np.ones((len(random_configs))) * ifNull(inference_time_limit, constant_value=60)
             random_configs[:, feature_names.index('pipeline_size_constraint')] = np.ones((len(random_configs))) * ifNull(pipeline_size_limit, constant_value=350000000)
             random_configs[:, feature_names.index('fairness_constraint')] = np.ones((len(random_configs))) * ifNull(fairness_limit, constant_value=0.0)
+            random_configs[:, feature_names.index('consumed_energy_limit')] = np.ones((len(random_configs))) * ifNull(consumed_energy_limit, constant_value=100)
 
             #adjust transformed constraints
             hold_out_fraction = feature_names.index('hold_out_fraction')
