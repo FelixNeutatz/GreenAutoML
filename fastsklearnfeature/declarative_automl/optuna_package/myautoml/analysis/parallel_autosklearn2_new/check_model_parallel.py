@@ -241,7 +241,7 @@ if __name__ == "__main__":
                                   len_pred=return_dict['len_pred']))
 
 
-                current_dynamic.append(result)
+                current_dynamic.append(return_dict['result'])
                 print('dynamic: ' + str(current_dynamic))
             dynamic_approach.append(current_dynamic)
             new_constraint_evaluation_dynamic_all.append(new_constraint_evaluation_dynamic)
