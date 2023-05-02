@@ -119,6 +119,14 @@ memory_budget = 500.0
 privacy = None
 
 def evaluatePipeline(return_dict):
+    categorical_indicator_hold = return_dict['categorical_indicator_hold']
+    search_time_frozen = return_dict['search_time_frozen']
+    repeat = return_dict['repeat']
+    X_train_hold = return_dict['X_train_hold']
+    y_train_hold = return_dict['y_train_hold']
+    X_test_hold = return_dict['X_test_hold']
+    y_test_hold = return_dict['y_test_hold']
+
     tmp_path = "/home/" + getpass.getuser() + "/data/auto_tmp/autosklearn" + str(time.time()) + '_' + str(
         np.random.randint(1000)) + 'folder'
 
@@ -136,7 +144,7 @@ def evaluatePipeline(return_dict):
         X_train_sample = X_train_hold
         y_train_sample = y_train_hold
 
-        
+
         automl = AutoSklearn2Classifier(
             time_left_for_this_task=search_time_frozen,
             delete_tmp_folder_after_terminate=True,
@@ -206,13 +214,13 @@ if __name__ == "__main__":
 
                 manager = Manager()
                 return_dict = manager.dict()
-                results_dict['categorical_indicator_hold'] = categorical_indicator_hold
-                results_dict['search_time_frozen'] = search_time_frozen
-                results_dict['repeat'] = repeat
-                results_dict['X_train_hold'] = X_train_hold
-                results_dict['y_train_hold'] = y_train_hold
-                results_dict['X_test_hold'] = X_test_hold
-                results_dict['y_test_hold'] = y_test_hold
+                return_dict['categorical_indicator_hold'] = categorical_indicator_hold
+                return_dict['search_time_frozen'] = search_time_frozen
+                return_dict['repeat'] = repeat
+                return_dict['X_train_hold'] = X_train_hold
+                return_dict['y_train_hold'] = y_train_hold
+                return_dict['X_test_hold'] = X_test_hold
+                return_dict['y_test_hold'] = y_test_hold
                 my_process = Process(target=evaluatePipeline, name='start', args=(return_dict,))
                 my_process.start()
                 #my_process.join(int(minutes_to_search*3))
