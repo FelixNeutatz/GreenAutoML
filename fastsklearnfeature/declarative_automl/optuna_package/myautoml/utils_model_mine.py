@@ -2415,7 +2415,8 @@ def utils_run_AutoML_ensemble_from_features(X_train=None, X_test=None, y_train=N
                fairness_limit=None,
                fairness_group_id=None,
                features=None,
-               feature_names=None
+               feature_names=None,
+               tracker=None
                ):
     gen = SpaceGenerator()
     space = gen.generate_params()
@@ -2461,17 +2462,21 @@ def utils_run_AutoML_ensemble_from_features(X_train=None, X_test=None, y_train=N
                       train_best_with_full_data=train_best_with_full_data
                       )
     search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
+    tracker.stop()
+
+    tracker_inference = EmissionsTracker(save_to_file=False)
+    tracker_inference.start()
 
     test_score = 0.0
     try:
-        search.fit(X_train, y_train)
         y_hat_test = search.predict(X_test)
+        tracker_inference.stop()
         test_score = balanced_accuracy_score(y_test, y_hat_test)
     except:
         pass
 
 
-    return test_score, search, space
+    return test_score, search, space, tracker, tracker_inference
 
 def show_progress(search, X_test, y_test, scorer):
     times = []

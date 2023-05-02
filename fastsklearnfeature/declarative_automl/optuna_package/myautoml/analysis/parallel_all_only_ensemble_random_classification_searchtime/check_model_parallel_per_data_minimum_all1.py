@@ -13,7 +13,7 @@ from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model_m
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model_mine import utils_run_AutoML_ensemble_from_features
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model_mine import get_feature_names
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model_mine import ifNull
-from fastsklearnfeature.declarative_automl.optuna_package.myautoml.analysis.parallel.util_classes_new import ConstraintEvaluation, ConstraintRun, space2str
+from fastsklearnfeature.declarative_automl.optuna_package.myautoml.analysis.parallel.util_classes import ConstraintEvaluation, ConstraintRun
 from anytree import RenderTree
 import argparse
 import openml
@@ -23,6 +23,7 @@ import time
 from optuna.samplers import NSGAIISampler
 import getpass
 import numpy as np
+from codecarbon import EmissionsTracker
 
 openml.config.apikey = '4384bd56dad8c3d2c0f6630c52ef5567'
 openml.config.cache_directory = '/home/' + getpass.getuser() + '/phd2/cache_openml'
@@ -126,6 +127,9 @@ for test_holdout_dataset_id in [args.dataset]:
                                                                  system_def='dynamic')
         for repeat in range(10):
 
+            tracker = EmissionsTracker(save_to_file=False)
+            tracker.start()
+
             start_probing = time.time()
 
             ##fix random_configs
@@ -171,8 +175,9 @@ for test_holdout_dataset_id in [args.dataset]:
             try:
                 result = None
                 search_dynamic = None
+                #test_score, search, space, tracker, tracker_inference
                 if True:#mp_global.study_prune.best_trial.value > 0.5: #TODO
-                    result, search_dynamic, space = utils_run_AutoML_ensemble_from_features(X_train=X_train_hold,
+                    result, search_dynamic, space, tracker, tracker_inference = utils_run_AutoML_ensemble_from_features(X_train=X_train_hold,
                                                                  X_test=X_test_hold,
                                                                  y_train=y_train_hold,
                                                                  y_test=y_test_hold,
@@ -182,13 +187,14 @@ for test_holdout_dataset_id in [args.dataset]:
                                                                  memory_limit=memory_budget,
                                                                  privacy_limit=privacy,
                                                                  features=random_configs[best_id],
-                                                                 feature_names=feature_names
+                                                                 feature_names=feature_names,
+                                                                 tracker=tracker
                                                  )
 
-                new_constraint_evaluation_dynamic.append(ConstraintRun(space_str=space2str(space.parameter_tree), params=random_configs[best_id], test_score=result, estimated_score=0.0))
+                new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values, tracker_inference=tracker_inference.final_emissions_data.values, len_pred=len(X_test_hold)))
             except:
                 result = 0
-                new_constraint_evaluation_dynamic.append(ConstraintRun(space_str='', params=random_configs[best_id], test_score=result, estimated_score=0.0))
+                new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'shit happened', result, more='test'))
 
             print("test result: " + str(result))
             current_dynamic.append(result)
