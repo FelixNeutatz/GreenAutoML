@@ -144,7 +144,7 @@ def evaluatePipeline(return_dict):
         X_train_sample = X_train_hold
         y_train_sample = y_train_hold
 
-        '''
+
         automl = AutoSklearn2Classifier(
             time_left_for_this_task=search_time_frozen,
             delete_tmp_folder_after_terminate=True,
@@ -162,6 +162,7 @@ def evaluatePipeline(return_dict):
                                                                   memory_limit=1024 * 250,
                                                                   tmp_folder=tmp_path, n_jobs=1)
         automl.fit(X_train_sample.copy(), y_train_sample.copy(), feat_type=feat_type)
+        '''
         # automl.refit(X_train_sample.copy(), y_train_sample.copy())
 
 
