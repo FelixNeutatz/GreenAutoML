@@ -12,6 +12,7 @@ import shutil
 import traceback
 import autosklearn.classification
 import sklearn
+from multiprocessing import Process, set_start_method, Manager
 
 from anytree import RenderTree
 import numpy as np
@@ -117,6 +118,68 @@ print(args)
 memory_budget = 500.0
 privacy = None
 
+def evaluatePipeline(return_dict):
+    tmp_path = "/home/" + getpass.getuser() + "/data/auto_tmp/autosklearn" + str(time.time()) + '_' + str(
+        np.random.randint(1000)) + 'folder'
+
+    try:
+        tracker = EmissionsTracker(save_to_file=False)
+        tracker.start()
+
+        feat_type = []
+        for c_i in range(len(categorical_indicator_hold)):
+            if categorical_indicator_hold[c_i]:
+                feat_type.append('Categorical')
+            else:
+                feat_type.append('Numerical')
+
+        '''
+        automl = AutoSklearn2Classifier(
+            time_left_for_this_task=search_time_frozen,
+            delete_tmp_folder_after_terminate=True,
+            metric=balanced_accuracy,
+            seed=repeat,
+            memory_limit=1024 * 250,
+            tmp_folder=tmp_path
+        )
+        automl.fit(X_train_sample.copy(), y_train_sample.copy(), feat_type=feat_type, metric=balanced_accuracy)
+        '''
+        automl = autosklearn.classification.AutoSklearnClassifier(time_left_for_this_task=search_time_frozen,
+                                                                  delete_tmp_folder_after_terminate=True,
+                                                                  metric=balanced_accuracy,
+                                                                  seed=repeat,
+                                                                  memory_limit=1024 * 250,
+                                                                  tmp_folder=tmp_path, n_jobs=1)
+
+        X_train_sample = X_train_hold
+        y_train_sample = y_train_hold
+
+        automl.fit(X_train_sample.copy(), y_train_sample.copy(), feat_type=feat_type)
+        # automl.refit(X_train_sample.copy(), y_train_sample.copy())
+
+        tracker.stop()
+
+        tracker_inference = EmissionsTracker(save_to_file=False)
+        tracker_inference.start()
+        y_hat = automl.predict(X_test_hold)
+        tracker_inference.stop()
+        result = balanced_accuracy_score(y_test_hold, y_hat)
+        return_dict['result'] = result
+        return_dict['tracker'] = tracker.final_emissions_data.values
+        return_dict['tracker_inference'] = tracker_inference.final_emissions_data.values
+        return_dict['len_pred'] = len(X_test_hold)
+    except Exception as e:
+        traceback.print_exc()
+        print(e)
+        return_dict['result'] = 0
+        return_dict['tracker'] = None
+        return_dict['tracker_inference'] = None
+        return_dict['len_pred'] = None
+    finally:
+        if os.path.exists(tmp_path) and os.path.isdir(tmp_path):
+            # shutil.rmtree(tmp_path)
+            os.system('rm -fr "%s"' % tmp_path)
+
 if __name__ == "__main__":
 
     for test_holdout_dataset_id in [args.dataset]:
@@ -139,63 +202,33 @@ if __name__ == "__main__":
 
             for repeat in range(10):
 
-                tmp_path = "/home/" + getpass.getuser() + "/data/auto_tmp/autosklearn" + str(time.time()) + '_' + str(
-                    np.random.randint(1000)) + 'folder'
+                result = 0.0
 
-                try:
-                    tracker = EmissionsTracker(save_to_file=False)
-                    tracker.start()
+                manager = Manager()
+                return_dict = manager.dict()
+                results_dict['categorical_indicator_hold'] = categorical_indicator_hold
+                results_dict['search_time_frozen'] = search_time_frozen
+                results_dict['repeat'] = repeat
+                results_dict['X_train_hold'] = X_train_hold
+                results_dict['y_train_hold'] = y_train_hold
+                results_dict['X_test_hold'] = X_test_hold
+                results_dict['y_test_hold'] = y_test_hold
+                my_process = Process(target=evaluatePipeline, name='start', args=(return_dict,))
+                my_process.start()
+                #my_process.join(int(minutes_to_search*3))
+                my_process.join()
 
-                    feat_type = []
-                    for c_i in range(len(categorical_indicator_hold)):
-                        if categorical_indicator_hold[c_i]:
-                            feat_type.append('Categorical')
-                        else:
-                            feat_type.append('Numerical')
+                # If thread is active
+                while my_process.is_alive():
+                    # Terminate foo
+                    my_process.terminate()
+                    my_process.join()
 
-                    '''
-                    automl = AutoSklearn2Classifier(
-                        time_left_for_this_task=search_time_frozen,
-                        delete_tmp_folder_after_terminate=True,
-                        metric=balanced_accuracy,
-                        seed=repeat,
-                        memory_limit=1024 * 250,
-                        tmp_folder=tmp_path
-                    )
-                    automl.fit(X_train_sample.copy(), y_train_sample.copy(), feat_type=feat_type, metric=balanced_accuracy)
-                    '''
-                    automl = autosklearn.classification.AutoSklearnClassifier(time_left_for_this_task=search_time_frozen,
-                        delete_tmp_folder_after_terminate=True,
-                        metric=balanced_accuracy,
-                        seed=repeat,
-                        memory_limit=1024 * 250,
-                        tmp_folder=tmp_path)
+                new_constraint_evaluation_dynamic.append(
+                    ConstraintRun('test', 'test', return_dict['result'], more='test', tracker=return_dict['tracker'],
+                                  tracker_inference=return_dict['tracker_inference'],
+                                  len_pred=return_dict['len_pred']))
 
-                    X_train_sample = X_train_hold
-                    y_train_sample = y_train_hold
-
-                    automl.fit(X_train_sample.copy(), y_train_sample.copy(), feat_type=feat_type)
-                    #automl.refit(X_train_sample.copy(), y_train_sample.copy())
-
-                    tracker.stop()
-
-                    tracker_inference = EmissionsTracker(save_to_file=False)
-                    tracker_inference.start()
-                    y_hat = automl.predict(X_test_hold)
-                    tracker_inference.stop()
-                    result = balanced_accuracy_score(y_test_hold, y_hat)
-
-
-                    new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values, tracker_inference=tracker_inference.final_emissions_data.values, len_pred=len(X_test_hold)))
-                except Exception as e:
-                    traceback.print_exc()
-                    print(e)
-                    result = 0
-                    new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'shit happened', result, more='test'))
-                finally:
-                    if os.path.exists(tmp_path) and os.path.isdir(tmp_path):
-                        #shutil.rmtree(tmp_path)
-                        os.system('rm -fr "%s"' % tmp_path)
 
                 current_dynamic.append(result)
                 print('dynamic: ' + str(current_dynamic))
