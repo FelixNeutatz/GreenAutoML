@@ -73,7 +73,7 @@ if __name__ == "__main__":
                     tracker = EmissionsTracker(save_to_file=False)
                     tracker.start()
 
-                    search_default = AutoEn(n_jobs=2,
+                    search_default = AutoEn(n_jobs=4,
                                               time_search_budget=search_time_frozen,
                                               space=space,
                                               evaluation_budget=int(0.1 * search_time_frozen),
