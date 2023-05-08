@@ -66,7 +66,7 @@ classifier_list = [RandomForestClassifierOptuna(),#TabPFNClassifierOptuna(),
                                 LinearDiscriminantAnalysisOptuna()
                                 ]
 
-private_classifier_list = [PrivateLogisticRegressionOptuna(), PrivateGaussianNBOptuna()]
+private_classifier_list = []#[PrivateLogisticRegressionOptuna(), PrivateGaussianNBOptuna()]
 
 #classifier_list = [RandomForestClassifierOptuna()]
 
