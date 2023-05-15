@@ -73,7 +73,7 @@ if __name__ == "__main__":
                     tracker = EmissionsTracker(save_to_file=False)
                     tracker.start()
 
-                    search_default = AutoEn(n_jobs=8,
+                    search_default = AutoEn(n_jobs=1,
                                               time_search_budget=search_time_frozen,
                                               space=space,
                                               evaluation_budget=int(0.1 * search_time_frozen),
@@ -81,7 +81,8 @@ if __name__ == "__main__":
                                               differential_privacy_epsilon=privacy,
                                               hold_out_fraction=0.33,
                                               max_ensemble_models=1,
-                                              shuffle_validation=True
+                                              shuffle_validation=True,
+                                              inference_time_limit=0.001
                                               )
 
                     best_result = search_default.fit(X_train_hold, y_train_hold, categorical_indicator=categorical_indicator_hold, scorer=my_scorer)
