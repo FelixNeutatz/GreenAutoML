@@ -70,7 +70,10 @@ for test_holdout_dataset_id in [args.dataset]:
                 #df_test[label] = y_test_hold
                 my_data_test = TabularDataset(data=df_test)
 
-                predictor = TabularPredictor(label=label, eval_metric='balanced_accuracy', path=tmp_path).fit(train_data=my_data_train, time_limit=search_time_frozen, presets='best_quality', num_cpus=1)
+                presets = ['good_quality_faster_inference_only_refit', 'optimize_for_deployment']
+                #presets = 'best_quality'
+
+                predictor = TabularPredictor(label=label, eval_metric='balanced_accuracy', path=tmp_path).fit(train_data=my_data_train, time_limit=search_time_frozen, presets=presets, num_cpus=1)
                 tracker.stop()
 
                 tracker_inference = EmissionsTracker(save_to_file=False)
