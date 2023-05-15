@@ -46,10 +46,12 @@ class SpaceGenerator:
             classifier = self.classifier_list[c_i]
             classifier.generate_hyperparameters(self.space, category_classifier[c_i])
 
+        '''
         category_private_classifier = self.space.generate_cat('private_classifier', self.private_classifier_list, self.private_classifier_list[0])
         for c_i in range(len(self.private_classifier_list)):
             private_classifier = self.private_classifier_list[c_i]
             private_classifier.generate_hyperparameters(self.space, category_private_classifier[c_i])
+        '''
 
         category_scaler = self.space.generate_cat('scaler', self.scaling_list, self.scaling_list[0])
         for s_i in range(len(self.scaling_list)):
