@@ -82,7 +82,7 @@ if __name__ == "__main__":
                                               hold_out_fraction=0.33,
                                               max_ensemble_models=1,
                                               shuffle_validation=True,
-                                              inference_time_limit=0.002
+                                              inference_time_limit=0.003
                                               )
 
                     best_result = search_default.fit(X_train_hold, y_train_hold, categorical_indicator=categorical_indicator_hold, scorer=my_scorer)
