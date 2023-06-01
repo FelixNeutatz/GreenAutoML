@@ -217,7 +217,7 @@ def ensemble(return_dict):
         model_list = []
 
         for k in desc_sorted_keys:
-            if float(model_store[k][1]) / sorted_accuracies[0] > 0.50:
+            if float(model_store[k][1]) / sorted_accuracies[0] > 0.70:
                 validation_predictions_new.append(model_store[k][3])
                 model_list.append(model_store[k][0])
 
