@@ -82,8 +82,8 @@ if __name__ == "__main__":
                                               hold_out_fraction=0.33,
                                               max_ensemble_models=50,
                                               shuffle_validation=False,
-                                              time_fraction_ensemble=0.1,
-                                              #use_incremental_data=True
+                                              time_fraction_ensemble=0.2,
+                                              use_incremental_data=True
                                               )
 
                     best_result = search_default.fit(X_train_hold, y_train_hold, categorical_indicator=categorical_indicator_hold, scorer=my_scorer)
