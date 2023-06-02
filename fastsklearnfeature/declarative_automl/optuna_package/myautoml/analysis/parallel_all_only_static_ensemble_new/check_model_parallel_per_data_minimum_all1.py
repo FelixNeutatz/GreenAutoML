@@ -82,7 +82,7 @@ if __name__ == "__main__":
                                               hold_out_fraction=0.33,
                                               max_ensemble_models=50,
                                               shuffle_validation=False,
-                                              time_fraction_ensemble=0.05,
+                                              time_fraction_ensemble=0.01,
                                               use_incremental_data=True
                                               )
 
