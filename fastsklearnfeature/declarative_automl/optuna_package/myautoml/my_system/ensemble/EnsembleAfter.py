@@ -50,7 +50,10 @@ def my_train_test_split(X, y, random_state=42, train_size=100):
 
     class_indices = []
     for y_i in range(len(y_vals)):
-        class_indices.append(np.where(y == y_vals[y_i])[0])
+        #np.random.seed(random_state)
+        classids = np.where(y == y_vals[y_i])[0]
+        np.random.shuffle(classids)
+        class_indices.append(classids)
 
     train_ids = []
     test_ids = []
@@ -1026,6 +1029,7 @@ if __name__ == "__main__":
     #dataset = openml.datasets.get_dataset(41147)
     #dataset = openml.datasets.get_dataset(1596)
     #41167
+    #dataset = openml.datasets.get_dataset(23517)#4532)#4135)
 
     #dataset = openml.datasets.get_dataset(41167)
 
@@ -1080,23 +1084,18 @@ if __name__ == "__main__":
 
     differences_ens = []
 
+    search_time_frozen = 1*60
     for _ in range(10):
         search = MyAutoML(n_jobs=1,
-                          time_search_budget=2*60,
-                          space=space,
-                          main_memory_budget_gb=40,
-                          hold_out_fraction=0.6,
-                          max_ensemble_models=50,
-                          use_incremental_data=True,
-                          #inference_energy_limit=8.0e-08,
-                          #inference_time_limit=0.002,
-                          #training_time_limit=0.02
-                          #pipeline_size_limit=10000
-                          #fairness_limit=0.95,
-                          #fairness_group_id=12,
-                          shuffle_validation=False,
-                          time_fraction_ensemble=0.1
-
+                                              time_search_budget=search_time_frozen,
+                                              space=space,
+                                              evaluation_budget=int(0.1 * search_time_frozen),
+                                              main_memory_budget_gb=40,
+                                              hold_out_fraction=0.33,
+                                              max_ensemble_models=50,
+                                              shuffle_validation=False,
+                                              time_fraction_ensemble=0.2,
+                                              use_incremental_data=True
                           )
 
         begin = time.time()
