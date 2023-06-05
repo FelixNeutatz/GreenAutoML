@@ -80,9 +80,9 @@ if __name__ == "__main__":
                                               main_memory_budget_gb=memory_budget,
                                               differential_privacy_epsilon=privacy,
                                               hold_out_fraction=0.33,
-                                              max_ensemble_models=50,
-                                              shuffle_validation=False,
-                                              time_fraction_ensemble=0.01,
+                                              max_ensemble_models=1,
+                                              shuffle_validation=True,
+                                              time_fraction_ensemble=0.0,
                                               use_incremental_data=True
                                               )
 

@@ -306,6 +306,9 @@ def evaluatePipeline(key, return_dict):
         X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=my_random_state, stratify=y,
                                                                                     test_size=hold_out_fraction)
 
+        print('length xlen: ' + str(len(X_test)))
+        X_test, _, y_test, _ = my_train_test_split(X_test, y_test, random_state=42, train_size=min(1000, len(X_test)))
+
         if training_sampling_factor < 1.0:
             X_train, _, y_train, _ = sklearn.model_selection.train_test_split(X_train, y_train,
                                                                               random_state=42,
@@ -388,10 +391,11 @@ def evaluatePipeline(key, return_dict):
                         for k_return, val_return in new_return_dict.items():
                             return_dict[k_return] = val_return
 
-                        start_inference_val_time = time.time()
-                        return_dict[key + 'val_predictions'] = p.predict_proba(X_test)
-                        return_dict[key + 'val_predictions_time'] = time.time() - start_inference_val_time
-                        return_dict[key + 'val_true'] = y_test
+                        if max_ensemble_models > 1:
+                            start_inference_val_time = time.time()
+                            return_dict[key + 'val_predictions'] = p.predict_proba(X_test)
+                            return_dict[key + 'val_predictions_time'] = time.time() - start_inference_val_time
+                            return_dict[key + 'val_true'] = y_test
                         '''
                         if max_ensemble_models > 1 and caruana_ensemble:
                             start_inference_val_time = time.time()
@@ -444,10 +448,11 @@ def evaluatePipeline(key, return_dict):
                             for k_return, val_return in new_return_dict.items():
                                 return_dict[k_return] = val_return
 
-                            start_inference_val_time = time.time()
-                            return_dict[key + 'val_predictions'] = p.predict_proba(X_test)
-                            return_dict[key + 'val_predictions_time'] = time.time() - start_inference_val_time
-                            return_dict[key + 'val_true'] = y_test
+                            if max_ensemble_models > 1:
+                                start_inference_val_time = time.time()
+                                return_dict[key + 'val_predictions'] = p.predict_proba(X_test)
+                                return_dict[key + 'val_predictions_time'] = time.time() - start_inference_val_time
+                                return_dict[key + 'val_true'] = y_test
                             '''
                             if max_ensemble_models > 1 and caruana_ensemble:
                                 start_inference_val_time = time.time()
@@ -1022,7 +1027,7 @@ if __name__ == "__main__":
     # dataset = openml.datasets.get_dataset(1114)
 
     #dataset = openml.datasets.get_dataset(1116)
-    dataset = openml.datasets.get_dataset(31)  # 51
+    #dataset = openml.datasets.get_dataset(31)  # 51
     #dataset = openml.datasets.get_dataset(40685)
     #dataset = openml.datasets.get_dataset(1596)
     #dataset = openml.datasets.get_dataset(41167)
@@ -1030,6 +1035,7 @@ if __name__ == "__main__":
     #dataset = openml.datasets.get_dataset(1596)
     #41167
     #dataset = openml.datasets.get_dataset(23517)#4532)#4135)
+    dataset = openml.datasets.get_dataset(1596)
 
     #dataset = openml.datasets.get_dataset(41167)
 
@@ -1092,9 +1098,9 @@ if __name__ == "__main__":
                                               evaluation_budget=int(0.1 * search_time_frozen),
                                               main_memory_budget_gb=40,
                                               hold_out_fraction=0.33,
-                                              max_ensemble_models=50,
-                                              shuffle_validation=False,
-                                              time_fraction_ensemble=0.2,
+                                              max_ensemble_models=1,
+                                              shuffle_validation=True,
+                                              #time_fraction_ensemble=0.2,
                                               use_incremental_data=True
                           )
 
