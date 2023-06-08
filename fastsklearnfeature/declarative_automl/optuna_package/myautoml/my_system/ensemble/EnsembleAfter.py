@@ -307,7 +307,8 @@ def evaluatePipeline(key, return_dict):
                                                                                     test_size=hold_out_fraction)
 
         print('length xlen: ' + str(len(X_test)))
-        X_test, _, y_test, _ = my_train_test_split(X_test, y_test, random_state=42, train_size=min(1000, len(X_test)))
+        #X_test, _, y_test, _ = my_train_test_split(X_test, y_test, random_state=42, train_size=min(1000, len(X_test)))
+        X_test, _, y_test, _ = my_train_test_split(X_test, y_test, random_state=42, train_size=min(500, len(X_test)))
 
         if training_sampling_factor < 1.0:
             X_train, _, y_train, _ = sklearn.model_selection.train_test_split(X_train, y_train,
