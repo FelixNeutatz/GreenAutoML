@@ -195,7 +195,7 @@ def has_iterative_fit(p):
         return type(invert_op) != type(None)
 
 
-def ensemble(return_dict):
+def ensemble(return_dict, ensemble_pruning_threshold=0.7):
     model_store = return_dict['model_store']
     val_true_full = return_dict['val_true']
 
@@ -220,7 +220,7 @@ def ensemble(return_dict):
         model_list = []
 
         for k in desc_sorted_keys:
-            if float(model_store[k][1]) / sorted_accuracies[0] > 0.70:
+            if float(model_store[k][1]) / sorted_accuracies[0] > ensemble_pruning_threshold:
                 validation_predictions_new.append(model_store[k][3])
                 model_list.append(model_store[k][0])
 
@@ -292,6 +292,8 @@ def evaluatePipeline(key, return_dict):
 
         caruana_ensemble = return_dict['caruana_ensemble']
 
+        validation_sampling = return_dict['validation_sampling']
+
         trial = None
         if 'trial' in return_dict:
             trial = return_dict['trial']
@@ -308,7 +310,9 @@ def evaluatePipeline(key, return_dict):
 
         print('length xlen: ' + str(len(X_test)))
         #X_test, _, y_test, _ = my_train_test_split(X_test, y_test, random_state=42, train_size=min(1000, len(X_test)))
-        X_test, _, y_test, _ = my_train_test_split(X_test, y_test, random_state=42, train_size=min(500, len(X_test)))
+
+        if type(validation_sampling) != type(None):
+            X_test, _, y_test, _ = my_train_test_split(X_test, y_test, random_state=42, train_size=min(validation_sampling, len(X_test)))
 
         if training_sampling_factor < 1.0:
             X_train, _, y_train, _ = sklearn.model_selection.train_test_split(X_train, y_train,
@@ -543,7 +547,7 @@ class MyAutoML:
                  space=None,
                  study=None,
                  main_memory_budget_gb=4,
-                 sample_fraction=1.0,
+                 sample_fraction=None,
                  differential_privacy_epsilon=None,
                  training_time_limit=None,
                  inference_time_limit=None,
@@ -558,7 +562,9 @@ class MyAutoML:
                  train_best_with_full_data=False,
                  consumed_energy_limit=None,
                  caruana_ensemble=True,
-                 time_fraction_ensemble=0.0
+                 time_fraction_ensemble=0.0,
+                 ensemble_pruning_threshold=0.7,
+                 validation_sampling=None
                  ):
         self.cv = cv
         self.time_search_budget = time_search_budget
@@ -608,9 +614,13 @@ class MyAutoML:
         self.caruana_ensemble = caruana_ensemble
         self.ensemble_time = float(time_fraction_ensemble) * self.time_search_budget
 
+        self.ensemble_pruning_threshold = ensemble_pruning_threshold
+
         self.time_search_budget = (1.0 - time_fraction_ensemble) * self.time_search_budget
 
         self.dummy_result = -1
+
+        self.validation_sampling = validation_sampling
 
 
     def get_best_pipeline(self):
@@ -642,7 +652,7 @@ class MyAutoML:
         self.model_store = {}
         self.ensemble_store = None
 
-        if self.sample_fraction < 1.0:
+        if type(self.sample_fraction) != type(None) and self.sample_fraction < len(X_new):
             X, _, y, _ = sklearn.model_selection.train_test_split(X_new, y_new, random_state=42, stratify=y_new, train_size=self.sample_fraction)
         else:
             X = X_new
@@ -683,6 +693,8 @@ class MyAutoML:
             return_dict['max_ensemble_models'] = 1
             return_dict['dummy_result'] = 0.0
             return_dict['caruana_ensemble'] = self.caruana_ensemble
+            return_dict['validation_sampling'] = self.validation_sampling
+
 
             try:
                 return_dict['study_best_value'] = self.study.best_value
@@ -851,6 +863,7 @@ class MyAutoML:
                 return_dict['model_store'] = self.model_store
                 return_dict['dummy_result'] = self.dummy_result
                 return_dict['caruana_ensemble'] = self.caruana_ensemble
+                return_dict['validation_sampling'] = self.validation_sampling
 
                 return_dict['trial'] = trial
 
@@ -998,7 +1011,7 @@ class MyAutoML:
             return_dict['model_store'] = self.model_store
             return_dict['val_true'] = self.val_true
 
-            my_process = Process(target=ensemble, name='ensemble', args=(return_dict,))
+            my_process = Process(target=ensemble, name='ensemble', args=(return_dict, self.ensemble_pruning_threshold,))
             my_process.start()
             my_process.join(self.ensemble_time)
 
