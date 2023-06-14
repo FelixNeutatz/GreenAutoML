@@ -320,6 +320,8 @@ def sample_configuration(trial):
         my_dict = {}
         my_dict['space'] = trial.study.best_trial.user_attrs['space']
         my_dict['params'] = trial.study.best_params
+        my_dict['value'] = trial.study.best_value
+
         with open('/home/' + getpass.getuser() + '/data/my_temp/best_params.p', "wb+") as pickle_model_file:
             pickle.dump(my_dict, pickle_model_file)
     except Exception as e:
