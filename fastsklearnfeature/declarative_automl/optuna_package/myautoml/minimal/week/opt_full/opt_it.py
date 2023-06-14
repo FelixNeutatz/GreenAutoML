@@ -53,7 +53,7 @@ openml.config.cache_directory = '/home/neutatz/phd2/cache_openml'
 
 
 
-search_time = 60*5
+search_time = 60#60*5
 topk = 20
 repetitions_count = 10
 
