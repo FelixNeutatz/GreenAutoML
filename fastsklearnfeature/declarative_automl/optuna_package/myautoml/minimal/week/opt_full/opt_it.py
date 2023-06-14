@@ -213,7 +213,7 @@ def run_AutoML(task_id):
                               n_jobs=1,
                               evaluation_budget=evaluation_time,
                               time_search_budget=search_time,
-                              space=space,
+                              space=trial.user_attrs['space'],
                               main_memory_budget_gb=memory_limit,
                               differential_privacy_epsilon=privacy_limit,
                               hold_out_fraction=hold_out_fraction,
