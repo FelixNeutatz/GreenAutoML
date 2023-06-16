@@ -74,7 +74,7 @@ if __name__ == "__main__":
                     my_scorer = make_scorer(balanced_accuracy_score)
 
                     trial = None
-                    with open('/home/' + getpass.getuser() + '/data/my_temp/best_params.p', "wb+") as pickle_model_file:
+                    with open('/home/' + getpass.getuser() + '/data/my_temp/best_params.p', "rb") as pickle_model_file:
                         trial = pickle.load(pickle_model_file)['study'].best_trial
 
                     space = trial.user_attrs['space']
