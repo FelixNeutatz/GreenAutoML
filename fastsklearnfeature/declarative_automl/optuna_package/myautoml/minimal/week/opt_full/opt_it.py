@@ -45,7 +45,7 @@ np.random.shuffle(my_openml_tasks)
 
 search_time = 60#60*5
 topk = 20
-repetitions_count = 5#10
+repetitions_count = 15#10
 
 #search_time = 10
 #topk = 3
