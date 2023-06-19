@@ -7,7 +7,7 @@ datasets = [168794, 168797, 168796, 189871, 189861, 167185, 189872, 189908, 7510
 
 
 
-program = '/home/neutatz/Software/GreenAutoML/fastsklearnfeature/declarative_automl/optuna_package/myautoml/analysis/parallel_gama_new/parallel_mljar_new/check_model_parallel_mljar.py'
+program = '/home/neutatz/Software/GreenAutoML/fastsklearnfeature/declarative_automl/optuna_package/myautoml/analysis/parallel_mljar_new/check_model_parallel_mljar.py'
 outputname = 'mljar'
 
 conda_name = 'GreenAutoMLD'
