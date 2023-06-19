@@ -7,7 +7,7 @@ datasets = [168794, 168797, 168796, 189871, 189861, 167185, 189872, 189908, 7510
 
 
 
-program = '/home/neutatz/Software/GreenAutoML/fastsklearnfeature/declarative_automl/optuna_package/myautoml/analysis/parallel_tpot_new/check_model_parallel_tpot.py'
+program = '/home/neutatz/Software/GreenAutoML/fastsklearnfeature/declarative_automl/optuna_package/myautoml/analysis/parallel_flaml_new/check_model_parallel_flaml.py'
 outputname = 'flaml'
 
 conda_name = 'GreenAutoMLD'
