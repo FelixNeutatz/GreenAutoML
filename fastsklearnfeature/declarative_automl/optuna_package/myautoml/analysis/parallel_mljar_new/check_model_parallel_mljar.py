@@ -144,7 +144,7 @@ for test_holdout_dataset_id in [args.dataset]:
                 tracker.start()
 
                 #automl = GamaClassifier(max_total_time=search_time_frozen, store="nothing", n_jobs=1)
-                automl = AutoML(total_time_limit=search_time_frozen, n_jobs=1, mode='Compete')
+                automl = AutoML(total_time_limit=search_time_frozen, n_jobs=1, mode='Compete', results_path=tmp_path)
                 automl.fit(X_train_hold, y_train_hold)
 
                 tracker.stop()
