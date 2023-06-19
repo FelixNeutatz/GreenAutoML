@@ -1,11 +1,9 @@
 from sklearn.metrics import make_scorer
 import pickle
-from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import get_data
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.analysis.parallel.util_classes import ConstraintEvaluation, ConstraintRun
 import argparse
 import openml
 from sklearn.metrics import balanced_accuracy_score
-import pandas as pd
 import time
 import numpy as np
 import getpass
@@ -14,6 +12,39 @@ import shutil
 from codecarbon import EmissionsTracker
 import traceback
 from tpot import TPOTClassifier
+import sklearn
+
+def get_data(data_id, randomstate=42, task_id=None):
+    task = None
+    if type(task_id) != type(None):
+        task = openml.tasks.get_task(task_id)
+        data_id = task.get_dataset().dataset_id
+
+    dataset = openml.datasets.get_dataset(dataset_id=data_id)
+
+    X, y, categorical_indicator, attribute_names = dataset.get_data(
+        dataset_format="array",
+        target=dataset.default_target_attribute
+    )
+
+    X_train = None
+    X_test = None
+    y_train = None
+    y_test = None
+    if type(task_id) != type(None):
+        train_indices, test_indices = task.get_train_test_split_indices()
+        X_train = X[train_indices]
+        y_train = y[train_indices]
+        X_test = X[test_indices]
+        y_test = y[test_indices]
+    else:
+        X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X,
+                                                                                    y,
+                                                                                    random_state=randomstate,
+                                                                                    stratify=y,
+                                                                                    train_size=0.66)
+
+    return X_train, X_test, y_train, y_test, categorical_indicator, attribute_names
 
 
 
