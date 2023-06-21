@@ -199,7 +199,11 @@ def ensemble(return_dict, ensemble_pruning_threshold=0.7):
     model_store = return_dict['model_store']
     val_true_full = return_dict['val_true']
 
-    new_my_keys = list(model_store.keys())
+    new_my_keys = []
+    for kk in list(model_store.keys()):
+        if type(model_store[kk][3]) != type(None):
+            new_my_keys.append(kk)
+
     sorted_keys = np.array(sorted(new_my_keys))
     accuracies_for_keys = np.array([model_store[run_key][1] for run_key in sorted_keys])
 
