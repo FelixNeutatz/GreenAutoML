@@ -158,7 +158,7 @@ def run_AutoML(task_id):
     privacy = None
 
 
-    if not task_id in dictionary_felix:
+    if not task_id in dictionary_felix or not my_random_seed in dictionary_felix[task_id]:
 
         dynamic_params = []
         for random_i in range(1):
@@ -187,9 +187,13 @@ def run_AutoML(task_id):
                 traceback.print_exc()
             dynamic_params.append(test_score)
         dynamic_values_I_found = np.mean(np.array(dynamic_params))
-        dictionary_felix[task_id] = dynamic_values_I_found
 
-    dynamic_values_I_found = dictionary_felix[task_id]
+        if not task_id in dictionary_felix:
+            dictionary_felix[task_id] = {}
+
+        dictionary_felix[task_id][my_random_seed] = dynamic_values_I_found
+
+    dynamic_values_I_found = dictionary_felix[task_id][my_random_seed]
 
     dynamic_params = []
     for random_i in range(1):
@@ -298,7 +302,7 @@ def sample_configuration(trial):
         #np.random.seed(42)
         #np.random.shuffle(my_openml_tasks)
         validation_datasets = my_openml_tasks[:topk]
-        
+
 
         all_sum = 0
 
