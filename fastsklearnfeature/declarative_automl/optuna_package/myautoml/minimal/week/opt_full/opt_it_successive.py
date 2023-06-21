@@ -238,90 +238,82 @@ def run_AutoML(task_id):
     return (current_mean - dynamic_values_I_found) / max(current_mean, dynamic_values_I_found)
 
 def sample_configuration(trial):
-    results = [0.0]
-    try:
-        gen = SpaceGenerator()
-        space = gen.generate_params()
+    gen = SpaceGenerator()
+    space = gen.generate_params()
 
-        if trial.suggest_categorical('tune_space', [True, False]):
-            space.sample_parameters(trial) # no tuning of the space
+    if trial.suggest_categorical('tune_space', [True, False]):
+        space.sample_parameters(trial) # no tuning of the space
 
-        trial.set_user_attr('space', copy.deepcopy(space))
+    trial.set_user_attr('space', copy.deepcopy(space))
 
-        if trial.suggest_categorical('tune_evaluation_time_fraction', [True, False]):
-            evaluation_time_fraction = trial.suggest_uniform('evaluation_time_fraction', 0.0, 1.0)
+    if trial.suggest_categorical('tune_evaluation_time_fraction', [True, False]):
+        evaluation_time_fraction = trial.suggest_uniform('evaluation_time_fraction', 0.0, 1.0)
+    else:
+        evaluation_time_fraction = trial.suggest_uniform('evaluation_time_fraction', 0.1, 0.1)
+
+    # how many cvs should be used
+    cv = 1
+    number_of_cvs = 1
+    hold_out_fraction = None
+    if trial.suggest_categorical('tune_hold_out', [True, False]):
+        hold_out_fraction = trial.suggest_uniform('hold_out_fraction', 0.0, 1.0)
+    else:
+        hold_out_fraction = trial.suggest_uniform('hold_out_fraction', 0.33, 0.33)
+
+    sample_fraction = 1.0
+    if trial.suggest_categorical('use_sampling', [True, False]):
+        sample_fraction = trial.suggest_int('sample_fraction', 10, 1000000, log=True)
+
+    use_ensemble = trial.suggest_categorical('use_ensemble', [True, False])
+
+    if use_ensemble:
+        if trial.suggest_categorical('tune_ensemble_size', [True, False]):
+            ensemble_size = trial.suggest_int('ensemble_size', 2, 100, log=True)
         else:
-            evaluation_time_fraction = trial.suggest_uniform('evaluation_time_fraction', 0.1, 0.1)
-
-        # how many cvs should be used
-        cv = 1
-        number_of_cvs = 1
-        hold_out_fraction = None
-        if trial.suggest_categorical('tune_hold_out', [True, False]):
-            hold_out_fraction = trial.suggest_uniform('hold_out_fraction', 0.0, 1.0)
+            ensemble_size = trial.suggest_int('ensemble_size', 50, 50, log=True)
+        if trial.suggest_categorical('tune_time_fraction_ensemble', [True, False]):
+            time_fraction_ensemble = trial.suggest_uniform('time_fraction_ensemble', 0.0, 1.0)
         else:
-            hold_out_fraction = trial.suggest_uniform('hold_out_fraction', 0.33, 0.33)
+            time_fraction_ensemble = trial.suggest_uniform('time_fraction_ensemble', 0.01, 0.01)
+        if trial.suggest_categorical('tune_ensemble_pruning_threshold', [True, False]):
+            ensemble_pruning_threshold = trial.suggest_uniform('ensemble_pruning_threshold', 0.0, 1.0)
+        else:
+            ensemble_pruning_threshold = trial.suggest_uniform('ensemble_pruning_threshold', 0.7, 0.7)
 
-        sample_fraction = 1.0
-        if trial.suggest_categorical('use_sampling', [True, False]):
-            sample_fraction = trial.suggest_int('sample_fraction', 10, 1000000, log=True)
+    use_incremental_data = trial.suggest_categorical('use_incremental_data', [True, False])
 
-        use_ensemble = trial.suggest_categorical('use_ensemble', [True, False])
+    shuffle_validation = False
+    train_best_with_full_data = False
+    if not use_ensemble:
+        shuffle_validation = trial.suggest_categorical('shuffle_validation', [False, True])
+        train_best_with_full_data = trial.suggest_categorical('train_best_with_full_data', [False, True])
 
-        if use_ensemble:
-            if trial.suggest_categorical('tune_ensemble_size', [True, False]):
-                ensemble_size = trial.suggest_int('ensemble_size', 2, 100, log=True)
+        if trial.suggest_categorical('use_validation_sampling', [True, False]):
+            if trial.suggest_categorical('tune_validation_sampling', [True, False]):
+                validation_sampling = trial.suggest_int('validation_sampling', 10, 100000, log=True)
             else:
-                ensemble_size = trial.suggest_int('ensemble_size', 50, 50, log=True)
-            if trial.suggest_categorical('tune_time_fraction_ensemble', [True, False]):
-                time_fraction_ensemble = trial.suggest_uniform('time_fraction_ensemble', 0.0, 1.0)
-            else:
-                time_fraction_ensemble = trial.suggest_uniform('time_fraction_ensemble', 0.01, 0.01)
-            if trial.suggest_categorical('tune_ensemble_pruning_threshold', [True, False]):
-                ensemble_pruning_threshold = trial.suggest_uniform('ensemble_pruning_threshold', 0.0, 1.0)
-            else:
-                ensemble_pruning_threshold = trial.suggest_uniform('ensemble_pruning_threshold', 0.7, 0.7)
+                validation_sampling = trial.suggest_int('validation_sampling', 1000, 1000, log=True)
 
-        use_incremental_data = trial.suggest_categorical('use_incremental_data', [True, False])
-
-        shuffle_validation = False
-        train_best_with_full_data = False
-        if not use_ensemble:
-            shuffle_validation = trial.suggest_categorical('shuffle_validation', [False, True])
-            train_best_with_full_data = trial.suggest_categorical('train_best_with_full_data', [False, True])
-
-            if trial.suggest_categorical('use_validation_sampling', [True, False]):
-                if trial.suggest_categorical('tune_validation_sampling', [True, False]):
-                    validation_sampling = trial.suggest_int('validation_sampling', 10, 100000, log=True)
-                else:
-                    validation_sampling = trial.suggest_int('validation_sampling', 1000, 1000, log=True)
-
-        my_random_seed = int(time.time())
-
-        #execute on default if it is does not exist hashmap
-        #np.random.seed(42)
-        #np.random.shuffle(my_openml_tasks)
-        validation_datasets = my_openml_tasks[:topk]
+    #execute on default if it is does not exist hashmap
+    #np.random.seed(42)
+    #np.random.shuffle(my_openml_tasks)
+    validation_datasets = my_openml_tasks[:topk]
 
 
-        all_sum = 0
+    all_sum = 0
 
-        for random_i in range(repetitions_count):
+    for random_i in range(repetitions_count):
 
-            trial.set_user_attr('data_random_seed', random_i)
+        trial.set_user_attr('data_random_seed', random_i)
 
-            with NestablePool(processes=topk, initializer=init_pool_processes_p, initargs=(trial, dictionary_felix,)) as pool:
-                results = pool.map(run_AutoML, validation_datasets)  # 100000
+        with NestablePool(processes=topk, initializer=init_pool_processes_p, initargs=(trial, dictionary_felix,)) as pool:
+            results = pool.map(run_AutoML, validation_datasets)  # 100000
 
-            all_sum += np.sum(results)
+        all_sum += np.sum(results)
 
-            trial.report(all_sum, random_i)
-            if trial.should_prune():
-                raise optuna.TrialPruned()
-
-    except:
-        traceback.print_exc()
-        return 0.0
+        trial.report(all_sum, random_i)
+        if trial.should_prune():
+            raise optuna.TrialPruned()
 
     print('res: ' + str(results))
     print('one iteration done: ' + str(all_sum))
