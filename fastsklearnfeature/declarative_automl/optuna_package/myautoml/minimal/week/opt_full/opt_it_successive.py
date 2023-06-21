@@ -157,8 +157,9 @@ def run_AutoML(task_id):
     memory_budget = 500.0
     privacy = None
 
+    dict_key = str(task_id) + ',' + str(my_random_seed)
 
-    if not task_id in dictionary_felix or not my_random_seed in dictionary_felix[task_id]:
+    if not dict_key in dictionary_felix:
 
         dynamic_params = []
         for random_i in range(1):
@@ -188,12 +189,9 @@ def run_AutoML(task_id):
             dynamic_params.append(test_score)
         dynamic_values_I_found = np.mean(np.array(dynamic_params))
 
-        if not task_id in dictionary_felix:
-            dictionary_felix[task_id] = {}
+        dictionary_felix[dict_key] = dynamic_values_I_found
 
-        dictionary_felix[task_id][my_random_seed] = dynamic_values_I_found
-
-    dynamic_values_I_found = dictionary_felix[task_id][my_random_seed]
+    dynamic_values_I_found = dictionary_felix[dict_key]
 
     dynamic_params = []
     for random_i in range(1):
