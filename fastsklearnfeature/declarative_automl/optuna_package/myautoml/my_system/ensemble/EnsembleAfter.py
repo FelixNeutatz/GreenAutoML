@@ -205,7 +205,7 @@ def ensemble(return_dict, ensemble_pruning_threshold=0.7):
             new_my_keys.append(kk)
 
     if len(new_my_keys) <= 1:
-        return 
+        return
 
     sorted_keys = np.array(sorted(new_my_keys))
     accuracies_for_keys = np.array([model_store[run_key][1] for run_key in sorted_keys])

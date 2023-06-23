@@ -230,6 +230,7 @@ def run_AutoML(task_id):
 
     current_mean = np.mean(dynamic_params)
 
+    '''
     if max(current_mean, dynamic_values_I_found) == 0.0 or (current_mean - dynamic_values_I_found) == 0.0:
         return 0.0
 
@@ -242,6 +243,8 @@ def run_AutoML(task_id):
         return np.square(result_val)
 
     #return result_val
+    '''
+    return int(current_mean > dynamic_values_I_found)
 
 def sample_configuration(trial):
     gen = SpaceGenerator()
@@ -270,8 +273,8 @@ def sample_configuration(trial):
     if trial.suggest_categorical('use_sampling', [True, False]):
         sample_fraction = trial.suggest_int('sample_fraction', 10, 1000000, log=True)
 
-    #use_ensemble = trial.suggest_categorical('use_ensemble', [True, False])
-    use_ensemble = trial.suggest_categorical('use_ensemble', [True])
+    use_ensemble = trial.suggest_categorical('use_ensemble', [True, False])
+    #use_ensemble = trial.suggest_categorical('use_ensemble', [True])
 
     if use_ensemble:
         if trial.suggest_categorical('tune_ensemble_size', [True, False]):
