@@ -230,21 +230,22 @@ def run_AutoML(task_id):
 
     current_mean = np.mean(dynamic_params)
 
-    '''
+    
     if max(current_mean, dynamic_values_I_found) == 0.0 or (current_mean - dynamic_values_I_found) == 0.0:
         return 0.0
 
     result_val = (current_mean - dynamic_values_I_found) / max(current_mean, dynamic_values_I_found)
 
-
+    '''
     if result_val < 0:
         return -1 * np.square(result_val)
     else:
         return np.square(result_val)
-
-    #return result_val
     '''
-    return int(current_mean > dynamic_values_I_found)
+
+    return result_val
+
+    #return int(current_mean > dynamic_values_I_found)
 
 def sample_configuration(trial):
     gen = SpaceGenerator()
@@ -290,8 +291,8 @@ def sample_configuration(trial):
         else:
             ensemble_pruning_threshold = trial.suggest_uniform('ensemble_pruning_threshold', 0.7, 0.7)
 
-    #use_incremental_data = trial.suggest_categorical('use_incremental_data', [True, False])
-    use_incremental_data = trial.suggest_categorical('use_incremental_data', [True])
+    use_incremental_data = trial.suggest_categorical('use_incremental_data', [True, False])
+    #use_incremental_data = trial.suggest_categorical('use_incremental_data', [True])
 
     shuffle_validation = False
     train_best_with_full_data = False
