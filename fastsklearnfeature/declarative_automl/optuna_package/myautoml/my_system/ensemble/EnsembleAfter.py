@@ -319,13 +319,19 @@ def evaluatePipeline(key, return_dict):
         #X_test, _, y_test, _ = my_train_test_split(X_test, y_test, random_state=42, train_size=min(1000, len(X_test)))
 
         if type(validation_sampling) != type(None):
-            X_test, _, y_test, _ = my_train_test_split(X_test, y_test, random_state=42, train_size=min(validation_sampling, len(X_test)))
+            try:
+                X_test, _, y_test, _ = my_train_test_split(X_test, y_test, random_state=42, train_size=min(validation_sampling, len(X_test)))
+            except:
+                pass
 
         if training_sampling_factor < 1.0:
-            X_train, _, y_train, _ = sklearn.model_selection.train_test_split(X_train, y_train,
-                                                                              random_state=42,
-                                                                              stratify=y_train,
-                                                                              train_size=training_sampling_factor)
+            try:
+                X_train, _, y_train, _ = sklearn.model_selection.train_test_split(X_train, y_train,
+                                                                                  random_state=42,
+                                                                                  stratify=y_train,
+                                                                                  train_size=training_sampling_factor)
+            except:
+                pass
 
         X_train_big = copy.deepcopy(X_train)
         y_train_big = copy.deepcopy(y_train)
@@ -660,7 +666,9 @@ class MyAutoML:
         self.ensemble_store = None
 
         if type(self.sample_fraction) != type(None) and self.sample_fraction < len(X_new):
-            X, _, y, _ = sklearn.model_selection.train_test_split(X_new, y_new, random_state=42, stratify=y_new, train_size=self.sample_fraction)
+            #X, _, y, _ = sklearn.model_selection.train_test_split(X_new, y_new, random_state=42, stratify=y_new, train_size=self.sample_fraction)
+
+            X, _, y, _ = my_train_test_split(X_new, y_new, random_state=42, train_size=self.sample_fraction)
         else:
             X = X_new
             y = y_new
