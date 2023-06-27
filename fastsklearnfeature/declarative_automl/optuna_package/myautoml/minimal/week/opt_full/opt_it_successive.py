@@ -46,7 +46,7 @@ my_openml_tasks = [75129, 75126, 75156, 146592, 75192, 166866, 146597, 3049, 212
 
 search_time = 60#60*5
 topk = 20
-repetitions_count = 15#10
+repetitions_count = 15#15#10
 
 #search_time = 10
 #topk = 3
@@ -230,7 +230,7 @@ def run_AutoML(task_id):
 
     current_mean = np.mean(dynamic_params)
 
-    
+
     if max(current_mean, dynamic_values_I_found) == 0.0 or (current_mean - dynamic_values_I_found) == 0.0:
         return 0.0
 
@@ -318,7 +318,7 @@ def sample_configuration(trial):
 
         trial.set_user_attr('data_random_seed', random_i)
 
-        with NestablePool(processes=topk, initializer=init_pool_processes_p, initargs=(trial, dictionary_felix,)) as pool:
+        with NestablePool(processes=10, initializer=init_pool_processes_p, initargs=(trial, dictionary_felix,)) as pool:
             results = pool.map(run_AutoML, validation_datasets)  # 100000
 
         all_sum += np.sum(results)
