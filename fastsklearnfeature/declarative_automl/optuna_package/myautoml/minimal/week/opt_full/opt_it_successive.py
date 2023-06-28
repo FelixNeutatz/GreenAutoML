@@ -46,7 +46,7 @@ my_openml_tasks = [75129, 75126, 75156, 146592, 75192, 166866, 146597, 3049, 212
 
 search_time = 60#60*5
 topk = 20
-repetitions_count = 10#15#10
+repetitions_count = 1#15#10
 
 #search_time = 10
 #topk = 3
