@@ -48,7 +48,7 @@ my_openml_tasks = [75129, 75126, 75156, 146592, 75192, 166866, 146597, 3049, 212
 
 search_time = 60#60*5
 topk = 20
-repetitions_count = 1#15#10
+repetitions_count = 10#15#10
 
 #search_time = 10
 #topk = 3
@@ -217,7 +217,9 @@ def run_AutoML(task_id):
                               #consumed_energy_limit=consumed_energy_limit,
                               ensemble_pruning_threshold=ensemble_pruning_threshold,
                               time_fraction_ensemble=time_fraction_ensemble,
-                              validation_sampling=validation_sampling
+                              validation_sampling=validation_sampling,
+                              n_startup_trials=trial.params['n_startup_trials'],
+                              n_ei_candidates=trial.params['n_ei_candidates']
                           )
 
         test_score = 0.0
@@ -274,6 +276,16 @@ def sample_configuration(trial):
     sample_fraction = 1.0
     if trial.suggest_categorical('use_sampling', [True, False]):
         sample_fraction = trial.suggest_int('sample_fraction', 10, 1000000, log=True)
+
+    if trial.suggest_categorical('tune_n_startup_trials', [True, False]):
+        trial.suggest_int('n_startup_trials', 1, 100, log=True)
+    else:
+        trial.suggest_int('n_startup_trials', 10, 10, log=True)
+
+    if trial.suggest_categorical('tune_n_ei_candidates', [True, False]):
+        trial.suggest_int('n_ei_candidates', 1, 1000, log=True)
+    else:
+        trial.suggest_int('n_ei_candidates', 24, 24, log=True)
 
     use_ensemble = trial.suggest_categorical('use_ensemble', [True, False])
     #use_ensemble = trial.suggest_categorical('use_ensemble', [True])

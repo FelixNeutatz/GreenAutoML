@@ -43,6 +43,7 @@ except RuntimeError:
 
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.my_system.ensemble.EnsembleClassifier import EnsembleClassifier
 from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing.MyIdentity import IdentityTransformation
+from optuna.samplers import TPESampler
 
 
 def my_train_test_split(X, y, random_state=42, train_size=100):
@@ -577,7 +578,9 @@ class MyAutoML:
                  caruana_ensemble=True,
                  time_fraction_ensemble=0.0,
                  ensemble_pruning_threshold=0.7,
-                 validation_sampling=None
+                 validation_sampling=None,
+                 n_startup_trials=10,
+                 n_ei_candidates=24
                  ):
         self.cv = cv
         self.time_search_budget = time_search_budget
@@ -634,6 +637,9 @@ class MyAutoML:
         self.dummy_result = -1
 
         self.validation_sampling = validation_sampling
+
+        self.n_ei_candidates = n_ei_candidates
+        self.n_startup_trials = n_startup_trials
 
 
     def get_best_pipeline(self):
@@ -1004,7 +1010,7 @@ class MyAutoML:
         if type(self.study) == type(None):
             self.study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(
                                 n_startup_trials=3, n_warmup_steps=0, interval_steps=1
-                            ))
+                            ), sampler=TPESampler(n_startup_trials=self.n_startup_trials, n_ei_candidates=self.n_ei_candidates))
 
         callbacks = []
         if self.max_ensemble_models == 1:
