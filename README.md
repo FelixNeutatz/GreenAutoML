@@ -1,8 +1,6 @@
 # Green AutoML
 
-Optimizing a machine learning pipeline for a task at hand requires careful configuration of various hyperparameters, typically supported by an AutoML system that optimizes the hyperparameters for the given training dataset.
-Yet, depending on the AutoML system's own second-order meta-configuration, the performance of the AutoML process can vary significantly. Current AutoML systems cannot automatically adapt their own configuration to a specific use case. Further, they cannot compile user-defined application constraints on the effectiveness and efficiency of the pipeline and its generation.
-In this paper, we propose CAML, which uses meta-learning to automatically adapt its own AutoML parameters, such as the search strategy, the validation strategy, and the search space, for a task at hand. The dynamic AutoML strategy of CAML takes user-defined constraints into account and obtains constraint-satisfying pipelines with high predictive performance. 
+AutoML has risen to one of the most common tools for day-to-day data science pipeline development and several popular prototypes exist. While AutoML systems support data scientists during the tedious process of pipeline generation, it does so under heavy computation costs that result from extensive search or pre-training. In light of concerns with regard to the environment and the desire for Green IT, we want to holistically analyze the computational cost of pipelines generated through various AutoML systems by combining the cost during search and the downstream inference cost. We summarize our findings that show the benefits and disadvantages of implementation designs and their potential for Green AutoML.  
 
 ![image](https://user-images.githubusercontent.com/5217389/216223724-05dd746d-4cce-4e64-869e-b791cfe7cee2.png)
 
