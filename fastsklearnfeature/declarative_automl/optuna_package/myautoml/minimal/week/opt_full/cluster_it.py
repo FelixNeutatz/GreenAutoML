@@ -51,6 +51,6 @@ for iclust in range(kmeans.n_clusters):
     print('closest point to cluster center: ', cluster_pts[min_idx])
     print('closest index of point to cluster center: ', cluster_pts_indices[min_idx])
     print('  ', matrix[cluster_pts_indices[min_idx]])
-    closest_pt_idx.append(cluster_pts_indices[min_idx])
+    closest_pt_idx.append(my_openml_tasks[cluster_pts_indices[min_idx]])
 
-
+print(closest_pt_idx)
