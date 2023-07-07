@@ -53,7 +53,7 @@ if __name__ == "__main__":
         new_constraint_evaluation_dynamic_all = []
 
         #for minutes_to_search in [5*60]:#[1, 5, 10, 60]:#range(1, 6):
-        for minutes_to_search in [5*60]:
+        for minutes_to_search in [60]:
 
             current_dynamic = []
 
@@ -175,7 +175,9 @@ if __name__ == "__main__":
                               #consumed_energy_limit=consumed_energy_limit,
                               ensemble_pruning_threshold=ensemble_pruning_threshold,
                               time_fraction_ensemble=time_fraction_ensemble,
-                              validation_sampling=validation_sampling
+                              validation_sampling=validation_sampling,
+                              n_startup_trials=trial.params['n_startup_trials'],
+                              n_ei_candidates=trial.params['n_ei_candidates']
                           )
 
                     best_result = search_default.fit(X_train_hold, y_train_hold, categorical_indicator=categorical_indicator_hold, scorer=my_scorer)
