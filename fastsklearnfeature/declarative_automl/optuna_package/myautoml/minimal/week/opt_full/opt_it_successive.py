@@ -307,8 +307,8 @@ def sample_configuration(trial):
         else:
             ensemble_pruning_threshold = trial.suggest_uniform('ensemble_pruning_threshold', 0.7, 0.7)
 
-    use_incremental_data = trial.suggest_categorical('use_incremental_data', [True, False])
-    #use_incremental_data = trial.suggest_categorical('use_incremental_data', [True])
+    #use_incremental_data = trial.suggest_categorical('use_incremental_data', [True, False])
+    use_incremental_data = trial.suggest_categorical('use_incremental_data', [True])
 
     shuffle_validation = False
     train_best_with_full_data = False
