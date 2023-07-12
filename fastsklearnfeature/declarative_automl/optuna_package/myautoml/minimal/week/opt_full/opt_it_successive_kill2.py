@@ -160,42 +160,7 @@ def run_AutoML(task_id, return_dict, dictionary_felix, trial):
         traceback.print_exc()
         return np.NAN
 
-    memory_budget = 500.0
-    privacy = None
-
     dict_key = str(task_id) + ',' + str(my_random_seed)
-
-    if not dict_key in dictionary_felix:
-
-        dynamic_params = []
-        for random_i in range(1):
-
-            gen_new = SpaceGenerator()
-            space = gen_new.generate_params()
-
-            search = MyAutoML(n_jobs=1,
-                                    time_search_budget=search_time,
-                                    space=space,
-                                    evaluation_budget=int(0.1 * search_time),
-                                    main_memory_budget_gb=memory_budget,
-                                    differential_privacy_epsilon=privacy,
-                                    hold_out_fraction=0.33,
-                                    max_ensemble_models=1,
-                                    shuffle_validation=True,
-                                    )
-
-            test_score = 0.0
-            try:
-                search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
-                y_hat_test = search.predict(X_test)
-                test_score = balanced_accuracy_score(y_test, y_hat_test)
-            except Exception as e:
-                print('Exception: ' + str(e) + '\n\n')
-                traceback.print_exc()
-            dynamic_params.append(test_score)
-        dynamic_values_I_found = np.mean(np.array(dynamic_params))
-
-        dictionary_felix[dict_key] = dynamic_values_I_found
 
     dynamic_values_I_found = dictionary_felix[dict_key]
 
@@ -256,12 +221,149 @@ def run_AutoML(task_id, return_dict, dictionary_felix, trial):
     #return int(current_mean > dynamic_values_I_found)
 
 
+def run_AutoML_static(task_id, dictionary_felix, trial):
+    my_scorer = make_scorer(balanced_accuracy_score)
+
+    space = trial.user_attrs['space']
+
+    print(trial.params)
+
+    evaluation_time = int(trial.params['evaluation_time_fraction'] * search_time)
+
+    memory_limit = 10
+    if 'global_memory_constraint' in trial.params:
+        memory_limit = trial.params['global_memory_constraint']
+
+    privacy_limit = None
+    if 'privacy_constraint' in trial.params:
+        privacy_limit = trial.params['privacy_constraint']
+
+    training_time_limit = None
+    if 'training_time_constraint' in trial.params:
+        training_time_limit = trial.params['training_time_constraint']
+
+    inference_time_limit = None
+    if 'inference_time_constraint' in trial.params:
+        inference_time_limit = trial.params['inference_time_constraint']
+
+    consumed_energy_limit = None
+    if 'consumed_energy_limit' in trial.params:
+        consumed_energy_limit = trial.params['consumed_energy_limit']
+
+    pipeline_size_limit = None
+    if 'pipeline_size_constraint' in trial.params:
+        pipeline_size_limit = trial.params['pipeline_size_constraint']
+
+    fairness_limit = 0.0
+    if 'fairness_constraint' in trial.params:
+        fairness_limit = trial.params['fairness_constraint']
+
+    cv = 1
+    number_of_cvs = 1
+    hold_out_fraction = None
+    if 'global_cv' in trial.params:
+        cv = trial.params['global_cv']
+        if 'global_number_cv' in trial.params:
+            number_of_cvs = trial.params['global_number_cv']
+    else:
+        hold_out_fraction = trial.params['hold_out_fraction']
+
+    sample_fraction = None
+    if trial.params['use_sampling']:
+        sample_fraction = trial.params['sample_fraction']
+
+
+
+    ensemble_size = 1
+    time_fraction_ensemble = 0.0
+    ensemble_pruning_threshold = 0.7
+    if trial.params['use_ensemble']:
+        ensemble_size = trial.params['ensemble_size']
+        time_fraction_ensemble = trial.params['time_fraction_ensemble']
+        ensemble_pruning_threshold = trial.params['ensemble_pruning_threshold']
+
+    use_incremental_data = trial.params['use_incremental_data']
+
+    shuffle_validation = False
+    train_best_with_full_data = False
+    validation_sampling = None
+    if not trial.params['use_ensemble']:
+        shuffle_validation = trial.params['shuffle_validation']
+        train_best_with_full_data = trial.params['train_best_with_full_data']
+
+        if trial.params['use_validation_sampling']:
+            validation_sampling = trial.params['validation_sampling']
+
+    for pre, _, node in RenderTree(space.parameter_tree):
+        if node.status == True:
+            print("%s%s" % (pre, node.name))
+
+    my_random_seed = trial.user_attrs['data_random_seed']
+
+    try:
+        X_train, X_test, y_train, y_test, categorical_indicator, attribute_names = get_data('data', randomstate=my_random_seed, task_id=task_id)
+    except Exception as e:
+        print('Exception: ' + str(e) + '\n\n')
+        traceback.print_exc()
+        return np.NAN
+
+    memory_budget = 10.0
+    privacy = None
+
+    dict_key = str(task_id) + ',' + str(my_random_seed)
+
+    if not dict_key in dictionary_felix:
+
+        dynamic_params = []
+        for random_i in range(1):
+
+            gen_new = SpaceGenerator()
+            space = gen_new.generate_params()
+
+            search = MyAutoML(n_jobs=1,
+                                    time_search_budget=search_time,
+                                    space=space,
+                                    evaluation_budget=int(0.1 * search_time),
+                                    main_memory_budget_gb=memory_budget,
+                                    differential_privacy_epsilon=privacy,
+                                    hold_out_fraction=0.33,
+                                    max_ensemble_models=1,
+                                    shuffle_validation=True,
+                                    )
+
+            test_score = 0.0
+            try:
+                search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
+                y_hat_test = search.predict(X_test)
+                test_score = balanced_accuracy_score(y_test, y_hat_test)
+            except Exception as e:
+                print('Exception: ' + str(e) + '\n\n')
+                traceback.print_exc()
+            dynamic_params.append(test_score)
+        dynamic_values_I_found = np.mean(np.array(dynamic_params))
+
+        dictionary_felix[dict_key] = dynamic_values_I_found
+
+
+
+
 def run_force_limit(task_id):
+    my_process = Process(target=run_AutoML_static, name='start' + str(task_id),
+                         args=(task_id, dictionary_felix, trial,))
+    my_process.start()
+    my_process.join(search_time * 2)
+
+    # If thread is active
+    while my_process.is_alive():
+        # Terminate foo
+        my_process.terminate()
+        my_process.join()
+
     return_dict = mgr.dict()
     return_dict[task_id] = -1
     my_process = Process(target=run_AutoML, name='start' + str(task_id), args=(task_id, return_dict, dictionary_felix, trial,))
     my_process.start()
-    my_process.join(search_time * 4)
+    my_process.join(search_time * 2)
 
     # If thread is active
     while my_process.is_alive():
