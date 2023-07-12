@@ -312,37 +312,35 @@ def run_AutoML_static(task_id, dictionary_felix, trial):
 
     dict_key = str(task_id) + ',' + str(my_random_seed)
 
-    if not dict_key in dictionary_felix:
+    dynamic_params = []
+    for random_i in range(1):
 
-        dynamic_params = []
-        for random_i in range(1):
+        gen_new = SpaceGenerator()
+        space = gen_new.generate_params()
 
-            gen_new = SpaceGenerator()
-            space = gen_new.generate_params()
+        search = MyAutoML(n_jobs=1,
+                                time_search_budget=search_time,
+                                space=space,
+                                evaluation_budget=int(0.1 * search_time),
+                                main_memory_budget_gb=memory_budget,
+                                differential_privacy_epsilon=privacy,
+                                hold_out_fraction=0.33,
+                                max_ensemble_models=1,
+                                shuffle_validation=True,
+                                )
 
-            search = MyAutoML(n_jobs=1,
-                                    time_search_budget=search_time,
-                                    space=space,
-                                    evaluation_budget=int(0.1 * search_time),
-                                    main_memory_budget_gb=memory_budget,
-                                    differential_privacy_epsilon=privacy,
-                                    hold_out_fraction=0.33,
-                                    max_ensemble_models=1,
-                                    shuffle_validation=True,
-                                    )
+        test_score = 0.0
+        try:
+            search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
+            y_hat_test = search.predict(X_test)
+            test_score = balanced_accuracy_score(y_test, y_hat_test)
+        except Exception as e:
+            print('Exception: ' + str(e) + '\n\n')
+            traceback.print_exc()
+        dynamic_params.append(test_score)
+    dynamic_values_I_found = np.mean(np.array(dynamic_params))
 
-            test_score = 0.0
-            try:
-                search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
-                y_hat_test = search.predict(X_test)
-                test_score = balanced_accuracy_score(y_test, y_hat_test)
-            except Exception as e:
-                print('Exception: ' + str(e) + '\n\n')
-                traceback.print_exc()
-            dynamic_params.append(test_score)
-        dynamic_values_I_found = np.mean(np.array(dynamic_params))
-
-        dictionary_felix[dict_key] = dynamic_values_I_found
+    dictionary_felix[dict_key] = dynamic_values_I_found
 
 
 
@@ -350,17 +348,18 @@ def run_AutoML_static(task_id, dictionary_felix, trial):
 def run_force_limit(task_id):
     my_random_seed = trial.user_attrs['data_random_seed']
     dict_key = str(task_id) + ',' + str(my_random_seed)
-    dictionary_felix[dict_key] = 0.0
-    my_process = Process(target=run_AutoML_static, name='start' + str(task_id),
-                         args=(task_id, dictionary_felix, trial,))
-    my_process.start()
-    my_process.join(search_time * 2)
+    if not dict_key in dictionary_felix:
+        dictionary_felix[dict_key] = 0.0
+        my_process = Process(target=run_AutoML_static, name='start' + str(task_id),
+                             args=(task_id, dictionary_felix, trial,))
+        my_process.start()
+        my_process.join(search_time * 2)
 
-    # If thread is active
-    while my_process.is_alive():
-        # Terminate foo
-        my_process.terminate()
-        my_process.join()
+        # If thread is active
+        while my_process.is_alive():
+            # Terminate foo
+            my_process.terminate()
+            my_process.join()
 
     return_dict = mgr.dict()
     return_dict[task_id] = -1
