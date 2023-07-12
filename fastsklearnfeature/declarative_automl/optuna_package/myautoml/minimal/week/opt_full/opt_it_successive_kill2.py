@@ -348,6 +348,9 @@ def run_AutoML_static(task_id, dictionary_felix, trial):
 
 
 def run_force_limit(task_id):
+    my_random_seed = trial.user_attrs['data_random_seed']
+    dict_key = str(task_id) + ',' + str(my_random_seed)
+    dictionary_felix[dict_key] = 0.0
     my_process = Process(target=run_AutoML_static, name='start' + str(task_id),
                          args=(task_id, dictionary_felix, trial,))
     my_process.start()
