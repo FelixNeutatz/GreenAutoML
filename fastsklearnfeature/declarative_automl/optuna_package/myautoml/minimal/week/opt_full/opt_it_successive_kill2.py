@@ -256,7 +256,7 @@ def run_AutoML(task_id, return_dict, dictionary_felix, trial):
     #return int(current_mean > dynamic_values_I_found)
 
 
-def run(task_id):
+def run_force_limit(task_id):
     return_dict = mgr.dict()
     return_dict[task_id] = -1
     my_process = Process(target=run_AutoML, name='start' + str(task_id), args=(task_id, return_dict, dictionary_felix, trial,))
@@ -353,7 +353,7 @@ def sample_configuration(trial):
         trial.set_user_attr('data_random_seed', random_i)
 
         with NestablePool(processes=10, initializer=init_pool_processes_p, initargs=(trial, dictionary_felix,)) as pool:
-            results = pool.map(run_AutoML, validation_datasets)  # 100000
+            results = pool.map(run_force_limit, validation_datasets)  # 100000
 
 
 
