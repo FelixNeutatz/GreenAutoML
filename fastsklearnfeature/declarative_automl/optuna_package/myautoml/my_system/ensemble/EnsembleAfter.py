@@ -67,6 +67,23 @@ def my_train_test_split(X, y, random_state=42, train_size=100):
                     test_ids.append(class_indices[y_i][row_id])
     return X[train_ids], X[test_ids], y[train_ids], y[test_ids]
 
+def my_train_test_split_train(X, y, random_state=42, train_size=100):
+    y_vals, y_counts = np.unique(y, return_counts=True)
+
+    class_indices = []
+    for y_i in range(len(y_vals)):
+        #np.random.seed(random_state)
+        classids = np.where(y == y_vals[y_i])[0]
+        np.random.shuffle(classids)
+        class_indices.append(classids)
+
+    train_ids = []
+
+    for y_i in range(len(y_vals)):
+        train_ids.extend((class_indices[y_i][:min(int(train_size / float(len(y_vals))), len(class_indices[y_i]))]).tolist())
+
+    return X[train_ids], y[train_ids]
+
 def my_train_test_split_ids(X, y, random_state=42, train_size=100):
     y_vals, y_counts = np.unique(y, return_counts=True)
 
@@ -362,7 +379,7 @@ def evaluatePipeline(key, return_dict):
 
 
             if current_size < len(X_train_big):
-                X_train, _, y_train, _ = my_train_test_split(X_train_big, y_train_big, random_state=42, train_size=current_size)
+                X_train, y_train = my_train_test_split_train(X_train_big, y_train_big, random_state=42, train_size=current_size)
                 current_size *= 3
                 current_size = min(current_size, len(X_train_big))
             else:
