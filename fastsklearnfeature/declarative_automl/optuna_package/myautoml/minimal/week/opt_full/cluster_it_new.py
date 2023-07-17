@@ -47,3 +47,7 @@ for i in range(len(my_openml_tasks)):
     my_dict[labels[i]].append(my_openml_tasks[i])
 
 print(my_dict)
+
+with open('/home/' + getpass.getuser() + '/data/my_temp/clustering.p', "wb") as pickle_model_file:
+    pickle.dump(pipe, pickle_model_file)
+
