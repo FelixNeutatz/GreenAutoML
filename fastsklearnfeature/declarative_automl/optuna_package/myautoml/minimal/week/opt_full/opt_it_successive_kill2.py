@@ -47,7 +47,11 @@ openml.config.cache_directory = '/home/neutatz/phd2/cache_openml'
 
 #my_openml_tasks = [166913, 189878, 75156, 166944, 3049, 146594, 167085, 146597, 166996, 256, 75136, 75154, 146592, 146603, 189859, 166953, 166875, 75236, 271, 168785, 166906, 75100, 189829, 189882, 189845, 75225, 166866, 3047, 75126, 241, 189899, 190156, 167100, 75109, 146574, 189900, 167106, 167205, 167086, 2125]
 
-my_openml_tasks = [75126, 75125, 75121, 75120, 75116, 75115, 75114, 189859, 189878, 189786, 146597]
+#cluster 1
+#my_openml_tasks = [75126, 75125, 75121, 75120, 75116, 75115, 75114, 189859, 189878, 189786, 146597]
+
+#cluster 2
+my_openml_tasks = [75156, 166996, 168791, 167085]
 
 #np.random.seed(42)
 #np.random.shuffle(my_openml_tasks)
@@ -490,4 +494,4 @@ def sample_configuration(trial):
 study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(
                                 n_startup_trials=3, n_warmup_steps=0, interval_steps=1
                             ))
-study.optimize(sample_configuration, n_trials=1000)
+study.optimize(sample_configuration, n_trials=150)
