@@ -34,7 +34,7 @@ for i in range(len(my_openml_tasks)):
 
 from sklearn.cluster import KMeans
 
-pipe = Pipeline([('scaler', sklearn.preprocessing.Normalizer()), ('svc', KMeans(n_clusters=5, random_state=0))])
+pipe = Pipeline([('scaler', sklearn.preprocessing.StandardScaler()), ('kmeans', KMeans(n_clusters=5, random_state=0, max_iter=1000))])
 
 pipe.fit(matrix)
 
