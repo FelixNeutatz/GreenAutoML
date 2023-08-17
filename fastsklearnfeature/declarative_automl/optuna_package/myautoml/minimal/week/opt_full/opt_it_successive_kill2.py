@@ -353,7 +353,7 @@ def run_AutoML_static(task_id, dictionary_felix, trial):
 
 
 
-def run_force_limit(task_id):
+def run_force_limit(task_id, dictionary_felix, trial):
     my_random_seed = trial.user_attrs['data_random_seed']
     dict_key = str(task_id) + ',' + str(my_random_seed)
     if not dict_key in dictionary_felix:
@@ -466,7 +466,7 @@ def sample_configuration(trial):
 
         results = []
         for datasetit in validation_datasets:
-            results.append(run_force_limit(datasetit))
+            results.append(run_force_limit(datasetit, dictionary_felix, trial))
 
 
 
