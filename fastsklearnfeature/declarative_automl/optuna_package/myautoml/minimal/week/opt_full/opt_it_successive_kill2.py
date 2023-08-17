@@ -53,12 +53,14 @@ openml.config.cache_directory = '/home/neutatz/phd2/cache_openml'
 #cluster 2
 my_openml_tasks = [75156, 166996, 168791, 167085]
 
+my_openml_tasks = [75098, 75126, 273, 211722, 190157, 75237, 75154, 189878, 2121, 340, 190154, 189836]
+
 #np.random.seed(42)
 #np.random.shuffle(my_openml_tasks)
 
 search_time = 60#60*5
 topk = 40
-repetitions_count = 10#15#10
+repetitions_count = 5#15#10
 
 #search_time = 10
 #topk = 3
@@ -462,8 +464,9 @@ def sample_configuration(trial):
 
         trial.set_user_attr('data_random_seed', random_i)
 
-        with NestablePool(processes=10, initializer=init_pool_processes_p, initargs=(trial, dictionary_felix,)) as pool:
-            results = pool.map(run_force_limit, validation_datasets)  # 100000
+        results = []
+        for datasetit in validation_datasets:
+            results.append(run_force_limit(datasetit))
 
 
 
