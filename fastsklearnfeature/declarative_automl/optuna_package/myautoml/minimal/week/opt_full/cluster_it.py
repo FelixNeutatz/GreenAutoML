@@ -29,10 +29,10 @@ for i in range(len(my_openml_tasks)):
     matrix[i, 1] = X_train.shape[1]
     matrix[i, 2] = len(np.unique(y_train))
 
-matrix = sklearn.preprocessing.Normalizer().fit_transform(matrix)
+matrix = sklearn.preprocessing.StandardScaler().fit_transform(matrix)
 
 from sklearn.cluster import KMeans
-kmeans = KMeans(n_clusters=40, random_state=0).fit(matrix)
+kmeans = KMeans(n_clusters=12, random_state=0).fit(matrix)
 
 from scipy.spatial.distance import euclidean
 
