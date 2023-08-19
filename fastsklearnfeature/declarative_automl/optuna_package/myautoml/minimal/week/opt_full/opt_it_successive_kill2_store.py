@@ -494,12 +494,12 @@ def sample_configuration(trial):
 
     return all_sum
 
-'''
+
 study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(
                                 n_startup_trials=3, n_warmup_steps=0, interval_steps=1
                             ))
-'''
 
-study = pickle.load(open('/home/' + getpass.getuser() + '/data/my_temp/best_params.p', 'rb'))['study']
+
+#study = pickle.load(open('/home/' + getpass.getuser() + '/data/my_temp/best_params.p', 'rb'))['study']
 
 study.optimize(sample_configuration, n_trials=300)
