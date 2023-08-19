@@ -500,7 +500,6 @@ study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPr
                             ))
 '''
 
-#'/home/' + getpass.getuser() + '/data/my_temp/best_params.p'
-study = pickle.load(open('/home/felix/best_params.p', 'rb'))['study']
+study = pickle.load(open('/home/' + getpass.getuser() + '/data/my_temp/best_params.p', 'rb'))['study']
 
 study.optimize(sample_configuration, n_trials=300)
