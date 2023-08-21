@@ -468,11 +468,7 @@ def sample_configuration(trial):
 
         results = []
         for datasetit in validation_datasets:
-            results.append(run_force_limit(datasetit, dictionary_felix, trial))
-
-
-
-            all_sum += np.sum(results)
+            all_sum += run_force_limit(datasetit, dictionary_felix, trial)
 
             trial.report(all_sum, random_i)
             if trial.should_prune():
