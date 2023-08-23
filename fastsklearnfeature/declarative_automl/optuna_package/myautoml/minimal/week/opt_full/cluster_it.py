@@ -32,7 +32,7 @@ for i in range(len(my_openml_tasks)):
 matrix = sklearn.preprocessing.StandardScaler().fit_transform(matrix)
 
 from sklearn.cluster import KMeans
-kmeans = KMeans(n_clusters=60, random_state=0).fit(matrix)
+kmeans = KMeans(n_clusters=10, random_state=0).fit(matrix)
 
 from scipy.spatial.distance import euclidean
 
