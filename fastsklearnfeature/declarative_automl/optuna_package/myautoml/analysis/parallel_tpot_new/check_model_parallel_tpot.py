@@ -214,8 +214,12 @@ if __name__ == '__main__':
                     my_process.terminate()
                     my_process.join()
 
-                result = return_dict['result']
-                new_constraint_evaluation_dynamic.append(return_dict['constraintRun'])
+                if 'result' in return_dict:
+                    result = return_dict['result']
+                    new_constraint_evaluation_dynamic.append(return_dict['constraintRun'])
+                else:
+                    result = return_dict['result']
+                    new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'shit happened', result, more='test'))
 
                 current_dynamic.append(result)
                 print('dynamic: ' + str(current_dynamic))
