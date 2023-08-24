@@ -330,15 +330,23 @@ def evaluatePipeline(key, return_dict):
         if shuffle_validation:
             my_random_state = int(time.time())
 
-        X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=my_random_state, stratify=y,
-                                                                                    test_size=hold_out_fraction)
+        X_train = None
+        X_test = None
+        y_train = None
+        y_test = None
+        try:
+            X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=my_random_state, stratify=y,
+                                                                                        test_size=hold_out_fraction)
+        except:
+            X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=my_random_state, test_size=hold_out_fraction)
+
 
         print('length xlen: ' + str(len(X_test)))
         #X_test, _, y_test, _ = my_train_test_split(X_test, y_test, random_state=42, train_size=min(1000, len(X_test)))
 
         if type(validation_sampling) != type(None):
             try:
-                X_test, _, y_test, _ = my_train_test_split(X_test, y_test, random_state=42, train_size=min(validation_sampling, len(X_test)))
+                X_test, y_test = my_train_test_split_train(X_test, y_test, random_state=42, train_size=min(validation_sampling, len(X_test)))
             except:
                 pass
 
@@ -691,7 +699,7 @@ class MyAutoML:
         if type(self.sample_fraction) != type(None) and self.sample_fraction < len(X_new):
             #X, _, y, _ = sklearn.model_selection.train_test_split(X_new, y_new, random_state=42, stratify=y_new, train_size=self.sample_fraction)
 
-            X, _, y, _ = my_train_test_split(X_new, y_new, random_state=42, train_size=self.sample_fraction)
+            X, y = my_train_test_split_train(X_new, y_new, random_state=42, train_size=self.sample_fraction)
         else:
             X = X_new
             y = y_new
