@@ -12,6 +12,10 @@ from codecarbon import EmissionsTracker
 import traceback
 from tpot import TPOTClassifier
 import sklearn
+import multiprocessing
+
+multiprocessing.set_start_method('forkserver')
+
 
 class ConstraintRun(object):
     def __init__(self, space, best_trial, test_score, more=None, tracker=None, tracker_inference=None, len_pred=None):
@@ -112,7 +116,7 @@ print(args.dataset)
 
 print(args)
 
-args.dataset = 168794
+#args.dataset = 168794
 
 memory_budget = 500.0
 privacy = None
@@ -138,8 +142,9 @@ for test_holdout_dataset_id in [args.dataset]:
 
             tmp_path = "/home/" + getpass.getuser() + "/data/auto_tmp/autosklearn" + str(time.time()) + '_' + str(np.random.randint(1000)) + 'folder'
 
+            tracker = EmissionsTracker(save_to_file=False)
+            tracker_inference = EmissionsTracker(save_to_file=False)
             try:
-                tracker = EmissionsTracker(save_to_file=False)
                 tracker.start()
 
                 pipeline_optimizer = TPOTClassifier(random_state=repeat, max_time_mins=minutes_to_search,
@@ -148,7 +153,6 @@ for test_holdout_dataset_id in [args.dataset]:
 
                 tracker.stop()
 
-                tracker_inference = EmissionsTracker(save_to_file=False)
                 tracker_inference.start()
                 y_hat = pipeline_optimizer.predict(X_test_hold)
                 tracker_inference.stop()
@@ -158,6 +162,8 @@ for test_holdout_dataset_id in [args.dataset]:
 
                 new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values, tracker_inference=tracker_inference.final_emissions_data.values, len_pred=len(X_test_hold)))
             except Exception as e:
+                tracker.stop()
+                tracker_inference.stop()
                 traceback.print_exc()
                 print(e)
                 result = 0
