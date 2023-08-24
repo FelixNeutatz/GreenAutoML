@@ -13,6 +13,7 @@ import traceback
 from tpot import TPOTClassifier
 import sklearn
 import multiprocessing
+from multiprocessing import Process, set_start_method, Manager
 
 
 class ConstraintRun(object):
@@ -114,12 +115,54 @@ print(args.dataset)
 if __name__ == '__main__':
     multiprocessing.set_start_method('forkserver')
 
+    def runAutoML(return_dict):
+        result = 0.0
+        tracker = EmissionsTracker(save_to_file=False)
+        tracker_inference = EmissionsTracker(save_to_file=False)
+        try:
+            tracker.start()
+
+            pipeline_optimizer = TPOTClassifier(random_state=repeat, max_time_mins=minutes_to_search,
+                                                scoring='balanced_accuracy', n_jobs=1)
+            pipeline_optimizer.fit(X_train_hold, y_train_hold)
+
+            tracker.stop()
+
+            tracker_inference.start()
+            y_hat = pipeline_optimizer.predict(X_test_hold)
+            tracker_inference.stop()
+            print("Predictions:  \n", y_hat)
+
+            result = balanced_accuracy_score(y_test_hold, y_hat)
+
+            new_constraint_evaluation_dynamic.append(
+                ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values,
+                              tracker_inference=tracker_inference.final_emissions_data.values,
+                              len_pred=len(X_test_hold)))
+        except Exception as e:
+            tracker.stop()
+            tracker_inference.stop()
+            traceback.print_exc()
+            print(e)
+            result = 0
+            new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'shit happened', result, more='test'))
+        finally:
+            if os.path.exists(tmp_path) and os.path.isdir(tmp_path):
+                shutil.rmtree(tmp_path)
+
+        return_dict['result'] = result
+
+
     print(args)
 
     #args.dataset = 168794
 
     memory_budget = 500.0
     privacy = None
+
+    stop_dict = {}
+    stop_dict[1] = 5*60
+    stop_dict[5] = 10*60
 
     for test_holdout_dataset_id in [args.dataset]:
 
@@ -142,35 +185,19 @@ if __name__ == '__main__':
 
                 tmp_path = "/home/" + getpass.getuser() + "/data/auto_tmp/autosklearn" + str(time.time()) + '_' + str(np.random.randint(1000)) + 'folder'
 
-                tracker = EmissionsTracker(save_to_file=False)
-                tracker_inference = EmissionsTracker(save_to_file=False)
-                try:
-                    tracker.start()
+                manager = Manager()
+                return_dict = manager.dict()
+                my_process = Process(target=runAutoML, name='start', args=(return_dict,))
+                my_process.start()
+                my_process.join(int(stop_dict[minutes_to_search]))
 
-                    pipeline_optimizer = TPOTClassifier(random_state=repeat, max_time_mins=minutes_to_search,
-                                                        scoring='balanced_accuracy', n_jobs=1)
-                    pipeline_optimizer.fit(X_train_hold, y_train_hold)
+                # If thread is active
+                while my_process.is_alive():
+                    # Terminate foo
+                    my_process.terminate()
+                    my_process.join()
 
-                    tracker.stop()
-
-                    tracker_inference.start()
-                    y_hat = pipeline_optimizer.predict(X_test_hold)
-                    tracker_inference.stop()
-                    print("Predictions:  \n", y_hat)
-
-                    result = balanced_accuracy_score(y_test_hold, y_hat)
-
-                    new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values, tracker_inference=tracker_inference.final_emissions_data.values, len_pred=len(X_test_hold)))
-                except Exception as e:
-                    tracker.stop()
-                    tracker_inference.stop()
-                    traceback.print_exc()
-                    print(e)
-                    result = 0
-                    new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'shit happened', result, more='test'))
-                finally:
-                    if os.path.exists(tmp_path) and os.path.isdir(tmp_path):
-                        shutil.rmtree(tmp_path)
+                result = return_dict['result']
 
                 current_dynamic.append(result)
                 print('dynamic: ' + str(current_dynamic))
