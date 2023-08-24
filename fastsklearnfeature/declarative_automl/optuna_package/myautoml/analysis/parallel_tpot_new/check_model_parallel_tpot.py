@@ -113,7 +113,7 @@ args = parser.parse_args()
 print(args.dataset)
 
 if __name__ == '__main__':
-    multiprocessing.set_start_method('forkserver')
+    #multiprocessing.set_start_method('forkserver')
 
     def runAutoML(return_dict):
         repeat = return_dict['repeat']
@@ -122,6 +122,8 @@ if __name__ == '__main__':
         y_train_hold = return_dict['y_train_hold']
         X_test_hold = return_dict['X_test_hold']
         y_test_hold = return_dict['y_test_hold']
+
+        constraintRun = None
 
         result = 0.0
         tracker = EmissionsTracker(save_to_file=False)
@@ -142,22 +144,22 @@ if __name__ == '__main__':
 
             result = balanced_accuracy_score(y_test_hold, y_hat)
 
-            new_constraint_evaluation_dynamic.append(
-                ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values,
+            constraintRun = ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values,
                               tracker_inference=tracker_inference.final_emissions_data.values,
-                              len_pred=len(X_test_hold)))
+                              len_pred=len(X_test_hold))
         except Exception as e:
             tracker.stop()
             tracker_inference.stop()
             traceback.print_exc()
             print(e)
             result = 0
-            new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'shit happened', result, more='test'))
+            constraintRun = ConstraintRun('test', 'shit happened', result, more='test')
         finally:
             if os.path.exists(tmp_path) and os.path.isdir(tmp_path):
                 shutil.rmtree(tmp_path)
 
         return_dict['result'] = result
+        return_dict['constraintRun'] = constraintRun
 
 
     print(args)
@@ -213,6 +215,7 @@ if __name__ == '__main__':
                     my_process.join()
 
                 result = return_dict['result']
+                new_constraint_evaluation_dynamic.append(return_dict['constraintRun'])
 
                 current_dynamic.append(result)
                 print('dynamic: ' + str(current_dynamic))
