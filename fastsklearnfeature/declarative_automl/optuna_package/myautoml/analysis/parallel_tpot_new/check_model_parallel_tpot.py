@@ -116,6 +116,13 @@ if __name__ == '__main__':
     multiprocessing.set_start_method('forkserver')
 
     def runAutoML(return_dict):
+        repeat = return_dict['repeat']
+        minutes_to_search =  return_dict['minutes_to_search']
+        X_train_hold = return_dict['X_train_hold']
+        y_train_hold = return_dict['y_train_hold']
+        X_test_hold = return_dict['X_test_hold']
+        y_test_hold = return_dict['y_test_hold']
+
         result = 0.0
         tracker = EmissionsTracker(save_to_file=False)
         tracker_inference = EmissionsTracker(save_to_file=False)
@@ -187,6 +194,14 @@ if __name__ == '__main__':
 
                 manager = Manager()
                 return_dict = manager.dict()
+
+                return_dict['repeat'] = repeat
+                return_dict['minutes_to_search'] = minutes_to_search
+                return_dict['X_train_hold'] = X_train_hold
+                return_dict['y_train_hold'] = y_train_hold
+                return_dict['X_test_hold'] = X_test_hold
+                return_dict['y_test_hold'] = y_test_hold
+
                 my_process = Process(target=runAutoML, name='start', args=(return_dict,))
                 my_process.start()
                 my_process.join(int(stop_dict[minutes_to_search]))
