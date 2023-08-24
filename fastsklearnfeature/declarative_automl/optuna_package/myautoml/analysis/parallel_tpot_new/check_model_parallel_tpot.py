@@ -218,7 +218,7 @@ if __name__ == '__main__':
                     result = return_dict['result']
                     new_constraint_evaluation_dynamic.append(return_dict['constraintRun'])
                 else:
-                    result = return_dict['result']
+                    result = 0.0
                     new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'shit happened', result, more='test'))
 
                 current_dynamic.append(result)
