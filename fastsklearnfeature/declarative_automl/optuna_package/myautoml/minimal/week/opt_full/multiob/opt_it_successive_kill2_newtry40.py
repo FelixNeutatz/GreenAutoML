@@ -213,19 +213,16 @@ def run_AutoML(task_id, return_dict, dictionary_felix, trial):
                           )
 
         test_score = 0.0
-        tracker_new = EmissionsTracker(project_name='trackautoml' + str(time.time()),
-                                       experiment_id='id_trackautoml' + str(time.time()),  save_to_file=False)
+        track_all_time = np.inf
         try:
-            tracker_new.start()
+            track_start_time = time.time()
             search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
-            tracker_new.stop()
+            track_all_time = time.time() - track_start_time
             y_hat_test = search.predict(X_test)
             test_score = balanced_accuracy_score(y_test, y_hat_test)
         except Exception as e:
             print('Exception: ' + str(e) + '\n\n')
             traceback.print_exc()
-        finally:
-            tracker_new.stop()
         dynamic_params.append(test_score)
 
     current_mean = np.mean(dynamic_params)
@@ -237,10 +234,7 @@ def run_AutoML(task_id, return_dict, dictionary_felix, trial):
     result_val = (current_mean - dynamic_values_I_found) / max(current_mean, dynamic_values_I_found)
     #return result_val
     return_dict[task_id] = result_val
-    try:
-        return_dict[str(task_id) + 'emissions'] = tracker_new.final_emissions_data.values['energy_consumed']
-    except:
-        return_dict[str(task_id) + 'emissions'] = np.inf
+    return_dict[str(task_id) + 'emissions'] = track_all_time
 
     '''
     if result_val < 0:
