@@ -117,6 +117,14 @@ class StopWhenOptimumReachedCallback:
             study.stop()
 
 @dataclass
+class StopWhenNoImprovementReachedCallback:
+    nr_iterations: int
+
+    def __call__(self, study, trial):
+        if study.trials[-1].number - study.best_trial.number >= self.nr_iterations:
+            study.stop()
+
+@dataclass
 class StopWhenEnergyReachedCallback:
     consumed_energy_limit: float
     tracker: EmissionsTracker
@@ -605,7 +613,8 @@ class MyAutoML:
                  ensemble_pruning_threshold=0.7,
                  validation_sampling=None,
                  n_startup_trials=10,
-                 n_ei_candidates=24
+                 n_ei_candidates=24,
+                 no_improvement_iterations=None
                  ):
         self.cv = cv
         self.time_search_budget = time_search_budget
@@ -665,6 +674,7 @@ class MyAutoML:
 
         self.n_ei_candidates = n_ei_candidates
         self.n_startup_trials = n_startup_trials
+        self.no_improvement_iterations = no_improvement_iterations
 
 
     def get_best_pipeline(self):
@@ -1042,6 +1052,8 @@ class MyAutoML:
             callbacks.append(StopWhenOptimumReachedCallback(1.0))
         if type(None) != type(self.consumed_energy_limit):
             callbacks.append(StopWhenEnergyReachedCallback(self.consumed_energy_limit, self.tracker))
+        if type(None) != type(self.no_improvement_iterations):
+            callbacks.append(StopWhenNoImprovementReachedCallback(self.no_improvement_iterations))
 
         self.study.optimize(objective1, timeout=self.time_search_budget,
                             n_jobs=self.n_jobs,
@@ -1087,7 +1099,7 @@ if __name__ == "__main__":
     # dataset = openml.datasets.get_dataset(1114)
 
     #dataset = openml.datasets.get_dataset(1116)
-    #dataset = openml.datasets.get_dataset(31)  # 51
+    dataset = openml.datasets.get_dataset(31)  # 51
     #dataset = openml.datasets.get_dataset(40685)
     #dataset = openml.datasets.get_dataset(1596)
     #dataset = openml.datasets.get_dataset(41167)
@@ -1095,7 +1107,7 @@ if __name__ == "__main__":
     #dataset = openml.datasets.get_dataset(1596)
     #41167
     #dataset = openml.datasets.get_dataset(23517)#4532)#4135)
-    dataset = openml.datasets.get_dataset(1596)
+    #dataset = openml.datasets.get_dataset(1596)
 
     #dataset = openml.datasets.get_dataset(41167)
 
@@ -1150,7 +1162,7 @@ if __name__ == "__main__":
 
     differences_ens = []
 
-    search_time_frozen = 1*60
+    search_time_frozen = 3*60
     for _ in range(10):
         search = MyAutoML(n_jobs=1,
                                               time_search_budget=search_time_frozen,
@@ -1161,7 +1173,8 @@ if __name__ == "__main__":
                                               max_ensemble_models=1,
                                               shuffle_validation=True,
                                               #time_fraction_ensemble=0.2,
-                                              use_incremental_data=True
+                                              use_incremental_data=True,
+                                              no_improvement_iterations=5
                           )
 
         begin = time.time()
