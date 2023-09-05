@@ -254,6 +254,7 @@ def run_AutoML(task_id, return_dict, dictionary_felix, trial):
 def run_AutoML_static(task_id, dictionary_felix, trial):
     my_scorer = make_scorer(balanced_accuracy_score)
 
+    '''
     space = trial.user_attrs['space']
 
     print(trial.params)
@@ -327,6 +328,7 @@ def run_AutoML_static(task_id, dictionary_felix, trial):
     for pre, _, node in RenderTree(space.parameter_tree):
         if node.status == True:
             print("%s%s" % (pre, node.name))
+    '''
 
     my_random_seed = trial.user_attrs['data_random_seed']
 
