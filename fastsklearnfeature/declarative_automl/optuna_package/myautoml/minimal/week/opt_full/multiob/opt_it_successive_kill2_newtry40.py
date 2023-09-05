@@ -521,7 +521,7 @@ def sample_configuration(trial):
 
     return all_sum, all_sum_energy
 
-study = optuna.create_study(direction=["maximize", "maximize"], pruner=optuna.pruners.MedianPruner(
+study = optuna.create_study(directions=["maximize", "maximize"], pruner=optuna.pruners.MedianPruner(
                                 n_startup_trials=3, n_warmup_steps=0, interval_steps=1
                             ))
 study.optimize(sample_configuration, n_trials=150)
