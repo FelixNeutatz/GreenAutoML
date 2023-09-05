@@ -213,7 +213,7 @@ def run_AutoML(task_id, return_dict, dictionary_felix, trial):
                           )
 
         test_score = 0.0
-        tracker_new = EmissionsTracker(save_to_file=False)
+        tracker_new = EmissionsTracker(project_name='trackautoml', save_to_file=False)
         try:
             tracker_new.start()
             search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
@@ -223,6 +223,8 @@ def run_AutoML(task_id, return_dict, dictionary_felix, trial):
         except Exception as e:
             print('Exception: ' + str(e) + '\n\n')
             traceback.print_exc()
+        finally:
+            tracker_new.stop()
         dynamic_params.append(test_score)
 
     current_mean = np.mean(dynamic_params)
