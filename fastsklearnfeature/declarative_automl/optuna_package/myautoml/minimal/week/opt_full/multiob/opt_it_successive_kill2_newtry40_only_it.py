@@ -406,6 +406,7 @@ def run_force_limit(task_id, dictionary_felix, trial):
     return return_dict[task_id], return_dict[str(task_id) + 'emissions']
 
 def sample_configuration(trial):
+    '''
     gen = SpaceGenerator()
     space = gen.generate_params()
 
@@ -476,6 +477,10 @@ def sample_configuration(trial):
                 validation_sampling = trial.suggest_int('validation_sampling', 10, 100000, log=True)
             else:
                 validation_sampling = trial.suggest_int('validation_sampling', 1000, 1000, log=True)
+    '''
+
+    if trial.suggest_categorical('use_early_stopping', [True, False]):
+        early_stopping_iterations = trial.suggest_int('early_stopping_iterations', 2, 1000, log=True)
 
     #execute on default if it is does not exist hashmap
     #np.random.seed(42)
