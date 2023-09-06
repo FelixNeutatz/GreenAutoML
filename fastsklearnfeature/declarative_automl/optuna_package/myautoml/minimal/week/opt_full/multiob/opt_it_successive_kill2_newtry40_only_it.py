@@ -220,7 +220,7 @@ def run_AutoML(task_id, return_dict, dictionary_felix, trial):
                           )
 
         test_score = 0.0
-        track_all_time = np.inf
+        track_all_time = search_time * 2
         try:
             track_start_time = time.time()
             search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
@@ -397,6 +397,7 @@ def run_force_limit(task_id, dictionary_felix, trial):
 
     return_dict = mgr.dict()
     return_dict[task_id] = -1
+    return_dict[str(task_id) + 'emissions'] = search_time * 2
     my_process = Process(target=run_AutoML, name='start' + str(task_id), args=(task_id, return_dict, dictionary_felix, trial,))
     my_process.start()
     my_process.join(search_time * 2)
