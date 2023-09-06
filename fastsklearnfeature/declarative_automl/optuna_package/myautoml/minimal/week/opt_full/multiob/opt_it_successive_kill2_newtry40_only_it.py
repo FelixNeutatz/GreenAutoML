@@ -63,10 +63,12 @@ start_total_beginning = time.time()
 #my_openml_tasks = [167097, 75126, 190156, 340, 189829, 189828, 271, 211722, 190154, 189878, 75134, 167205, 189786, 166996, 75237, 190157, 189859, 189845, 75098, 167204, 75195, 75221, 75223, 75250, 167203, 146597, 75178, 75217, 190155, 75169, 167103, 2356, 75089, 75219, 236, 189880, 189840, 2121, 189846, 189902, 211724, 211723, 167085, 75154, 189863, 126030, 75233, 3044, 275, 126028, 211720, 189843, 189858, 189875, 189869, 75176, 126031, 146594, 189870, 189836]
 
 my_openml_tasks = [75178, 75136, 189878, 75126, 190157, 211722, 75154, 75223, 340, 189870, 258, 189786, 190154, 75250, 166996, 189859, 236, 189880, 167204, 75098, 75134, 75195, 75237, 146597, 167203, 190155, 75153, 189828, 190156, 75109, 2356, 189845, 189840, 2121, 167085, 167205, 75184, 271, 75169, 211723]
+
+
 #np.random.seed(42)
 #np.random.shuffle(my_openml_tasks)
 
-search_time = 60#60*5
+search_time = 60#60#60*5
 topk = 40
 repetitions_count = 1#5#15#10
 
@@ -510,11 +512,11 @@ def sample_configuration(trial):
             trial.set_user_attr('current_time', time.time() - start_total_beginning)
 
             try:
-                print('best params: ' + str(trial.study.best_params))
+                #print('best params: ' + str(trial.study.best_params))
                 my_dict = {}
-                my_dict['space'] = trial.study.best_trial.user_attrs['space']
-                my_dict['params'] = trial.study.best_params
-                my_dict['value'] = trial.study.best_value
+                #my_dict['space'] = trial.study.best_trial.user_attrs['space']
+                #my_dict['params'] = trial.study.best_params
+                #my_dict['value'] = trial.study.best_value
                 my_dict['study'] = trial.study
 
                 with open('/home/' + getpass.getuser() + '/data/my_temp/best_params40.p', "wb+") as pickle_model_file:
