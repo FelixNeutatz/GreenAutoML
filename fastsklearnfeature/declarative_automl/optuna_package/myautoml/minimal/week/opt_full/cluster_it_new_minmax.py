@@ -25,10 +25,20 @@ my_openml_tasks = [168794, 168797, 168796, 189871, 189861, 167185, 189872, 18990
 matrix = np.zeros((len(my_openml_tasks), 3))
 for i in range(len(my_openml_tasks)):
     task_id = my_openml_tasks[i]
-    X_train, X_test, y_train, y_test, categorical_indicator, attribute_names = get_data('data', randomstate=42, task_id=task_id)
-    matrix[i, 0] = len(X_train)
-    matrix[i, 1] = X_train.shape[1]
-    matrix[i, 2] = len(np.unique(y_train))
+
+    task = openml.tasks.get_task(task_id)
+    data_id = task.get_dataset().dataset_id
+
+    dataset = openml.datasets.get_dataset(dataset_id=data_id)
+
+    X, y, categorical_indicator, attribute_names = dataset.get_data(
+        dataset_format="array",
+        target=dataset.default_target_attribute
+    )
+
+    matrix[i, 0] = len(X)
+    matrix[i, 1] = X.shape[1]
+    matrix[i, 2] = len(np.unique(y))
 
 
 
