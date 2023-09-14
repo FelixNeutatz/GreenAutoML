@@ -209,7 +209,7 @@ def run_AutoML(task_id, return_dict, dictionary_felix, trial):
                               validation_sampling=validation_sampling,
                               n_startup_trials=trial.params['n_startup_trials'],
                               n_ei_candidates=trial.params['n_ei_candidates'],
-                              no_improvement_iterations=no_improvement_iterations
+                              no_improvement_iterations=int(no_improvement_iterations * len(X_train))
                           )
 
         test_score = 0.0
@@ -454,7 +454,7 @@ def sample_configuration(trial):
     use_incremental_data = trial.suggest_categorical('use_incremental_data', [True])
 
     if trial.suggest_categorical('use_early_stopping', [True, False]):
-        early_stopping_iterations = trial.suggest_int('early_stopping_iterations', 2, 1000, log=True)
+        early_stopping_iterations = trial.suggest_uniform('early_stopping_iterations', 0.0, 1.0)
 
     shuffle_validation = False
     train_best_with_full_data = False
@@ -514,5 +514,5 @@ def sample_configuration(trial):
 study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(
                                 n_startup_trials=3, n_warmup_steps=0, interval_steps=1
                             ))
-study.optimize(sample_configuration, n_trials=150)
+study.optimize(sample_configuration, n_trials=300)
 tracker.stop()
