@@ -53,7 +53,7 @@ if __name__ == "__main__":
         new_constraint_evaluation_dynamic_all = []
 
         #for minutes_to_search in [5*60]:#[1, 5, 10, 60]:#range(1, 6):
-        for minutes_to_search in [60]:
+        for minutes_to_search in [30]:
 
             current_dynamic = []
 
@@ -135,6 +135,10 @@ if __name__ == "__main__":
 
                     use_incremental_data = trial.params['use_incremental_data']
 
+                    no_improvement_iterations = None
+                    if 'use_early_stopping' in trial.params and trial.params['use_early_stopping']:
+                        no_improvement_iterations = int(trial.params['early_stopping_iterations'] * len(X_train_hold))
+
                     shuffle_validation = False
                     train_best_with_full_data = False
                     validation_sampling = None
@@ -177,7 +181,8 @@ if __name__ == "__main__":
                               time_fraction_ensemble=time_fraction_ensemble,
                               validation_sampling=validation_sampling,
                               n_startup_trials=trial.params['n_startup_trials'],
-                              n_ei_candidates=trial.params['n_ei_candidates']
+                              n_ei_candidates=trial.params['n_ei_candidates'],
+                              no_improvement_iterations=no_improvement_iterations
                           )
 
                     best_result = search_default.fit(X_train_hold, y_train_hold, categorical_indicator=categorical_indicator_hold, scorer=my_scorer)
