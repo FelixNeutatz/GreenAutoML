@@ -211,7 +211,7 @@ def run_AutoML(task_id, return_dict, dictionary_felix, trial):
 
         test_score = 0.0
         try:
-            if trial.params['use_feature_selection']:
+            if trial.params['use_feature_selection'] and trial.params['nr_features_fs'] < X_train.shape[1]:
                 def variance(X, y=None):
                     variances_ = np.var(X, axis=0)
                     return variances_
