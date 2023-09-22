@@ -182,7 +182,7 @@ def run_AutoML(task_id, return_dict, dictionary_felix, trial):
     dynamic_values_I_found = dictionary_felix[dict_key]
 
     dynamic_params = []
-    for random_i in range(1):
+    for random_i in range(2):
         search = MyAutoML(cv=cv,
                               number_of_cvs=number_of_cvs,
                               n_jobs=1,
@@ -330,7 +330,7 @@ def run_AutoML_static(task_id, dictionary_felix, trial):
     dict_key = str(task_id) + ',' + str(my_random_seed)
 
     dynamic_params = []
-    for random_i in range(1):
+    for random_i in range(2):
 
         gen_new = SpaceGenerator()
         space = gen_new.generate_params()
