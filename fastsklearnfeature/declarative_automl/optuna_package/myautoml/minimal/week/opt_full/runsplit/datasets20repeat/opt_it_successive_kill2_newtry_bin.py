@@ -491,7 +491,7 @@ def sample_configuration(trial):
                 my_dict['params'] = trial.study.best_params
                 my_dict['value'] = trial.study.best_value
                 my_dict['study'] = trial.study
-                my_dict['dictionary_felix'] = dictionary_felix
+                my_dict['dictionary_felix'] = str(dictionary_felix)
 
                 with open('/home/' + getpass.getuser() + '/data/my_temp/best_params40.p', "wb+") as pickle_model_file:
                     pickle.dump(my_dict, pickle_model_file)
