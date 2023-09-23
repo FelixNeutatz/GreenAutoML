@@ -1,6 +1,7 @@
 import os
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.my_system.ensemble.EnsembleAfter import MyAutoML
+from fastsklearnfeature.declarative_automl.optuna_package.myautoml.my_system.ensemble.EnsembleAfter import my_train_test_split_train
 import optuna
 import time
 from sklearn.metrics import make_scorer
@@ -66,7 +67,7 @@ my_openml_tasks = [75178, 260, 189859, 190157, 189829, 340, 189786, 236, 189828,
 #np.random.seed(42)
 #np.random.shuffle(my_openml_tasks)
 
-search_time = 60#60*5
+search_time = 10#60*5
 topk = 40
 repetitions_count = 1#5#15#10
 
@@ -90,7 +91,7 @@ def init_pool_processes_p(trial_p, dictionary_felix_p):
     dictionary_felix = dictionary_felix_p
 
 
-def run_AutoML(task_id, return_dict, dictionary_felix, trial):
+def run_AutoML(task_id, return_dict, dictionary_felix, trial, X_train, X_test, y_train, y_test, categorical_indicator, attribute_names):
     my_scorer = make_scorer(balanced_accuracy_score)
 
     space = trial.user_attrs['space']
@@ -168,13 +169,6 @@ def run_AutoML(task_id, return_dict, dictionary_felix, trial):
             print("%s%s" % (pre, node.name))
 
     my_random_seed = trial.user_attrs['data_random_seed']
-
-    try:
-        X_train, X_test, y_train, y_test, categorical_indicator, attribute_names = get_data('data', randomstate=my_random_seed, task_id=task_id)
-    except Exception as e:
-        print('Exception: ' + str(e) + '\n\n')
-        traceback.print_exc()
-        return np.NAN
 
     dict_key = str(task_id) + ',' + str(my_random_seed)
 
@@ -209,7 +203,7 @@ def run_AutoML(task_id, return_dict, dictionary_felix, trial):
 
         test_score = 0.0
         try:
-            search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
+            search.fit(copy.deepcopy(X_train), copy.deepcopy(y_train), categorical_indicator=categorical_indicator, scorer=my_scorer)
             y_hat_test = search.predict(X_test)
             test_score = balanced_accuracy_score(y_test, y_hat_test)
         except Exception as e:
@@ -237,7 +231,7 @@ def run_AutoML(task_id, return_dict, dictionary_felix, trial):
     #return int(current_mean > dynamic_values_I_found)
 
 
-def run_AutoML_static(task_id, dictionary_felix, trial):
+def run_AutoML_static(task_id, dictionary_felix, trial, X_train, X_test, y_train, y_test, categorical_indicator, attribute_names):
     my_scorer = make_scorer(balanced_accuracy_score)
 
     space = trial.user_attrs['space']
@@ -316,13 +310,6 @@ def run_AutoML_static(task_id, dictionary_felix, trial):
 
     my_random_seed = trial.user_attrs['data_random_seed']
 
-    try:
-        X_train, X_test, y_train, y_test, categorical_indicator, attribute_names = get_data('data', randomstate=my_random_seed, task_id=task_id)
-    except Exception as e:
-        print('Exception: ' + str(e) + '\n\n')
-        traceback.print_exc()
-        return np.NAN
-
     memory_budget = 10.0
     privacy = None
 
@@ -347,7 +334,7 @@ def run_AutoML_static(task_id, dictionary_felix, trial):
 
         test_score = 0.0
         try:
-            search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
+            search.fit(copy.deepcopy(X_train), copy.deepcopy(y_train), categorical_indicator=categorical_indicator, scorer=my_scorer)
             y_hat_test = search.predict(X_test)
             test_score = balanced_accuracy_score(y_test, y_hat_test)
         except Exception as e:
@@ -363,13 +350,23 @@ def run_AutoML_static(task_id, dictionary_felix, trial):
 
 def run_force_limit(task_id, dictionary_felix, trial):
     my_random_seed = trial.user_attrs['data_random_seed']
+
+    try:
+        X_train, X_test, y_train, y_test, categorical_indicator, attribute_names = get_data('data', randomstate=my_random_seed, task_id=task_id)
+        if len(X_test) > 1000:
+            X_test, y_test = my_train_test_split_train(X_test, y_test, random_state=42, train_size=1000)
+    except Exception as e:
+        print('Exception: ' + str(e) + '\n\n')
+        traceback.print_exc()
+        return 0.0
+
     dict_key = str(task_id) + ',' + str(my_random_seed)
     if not dict_key in dictionary_felix:
         dictionary_felix[dict_key] = 0.0
         my_process = Process(target=run_AutoML_static, name='start' + str(task_id),
-                             args=(task_id, dictionary_felix, trial,))
+                             args=(task_id, dictionary_felix, trial,X_train, X_test, y_train, y_test, categorical_indicator, attribute_names,))
         my_process.start()
-        my_process.join(search_time * 2)
+        my_process.join((search_time * 2*2) +60)
 
         # If thread is active
         while my_process.is_alive():
@@ -379,9 +376,9 @@ def run_force_limit(task_id, dictionary_felix, trial):
 
     return_dict = mgr.dict()
     return_dict[task_id] = -1
-    my_process = Process(target=run_AutoML, name='start' + str(task_id), args=(task_id, return_dict, dictionary_felix, trial,))
+    my_process = Process(target=run_AutoML, name='start' + str(task_id), args=(task_id, return_dict, dictionary_felix, trial,X_train, X_test, y_train, y_test, categorical_indicator, attribute_names,))
     my_process.start()
-    my_process.join(search_time * 2)
+    my_process.join((search_time * 2*2) +60)
 
     # If thread is active
     while my_process.is_alive():
@@ -489,6 +486,7 @@ def sample_configuration(trial):
                 my_dict['params'] = trial.study.best_params
                 my_dict['value'] = trial.study.best_value
                 my_dict['study'] = trial.study
+                my_dict['dictionary_felix'] = dictionary_felix
 
                 with open('/home/' + getpass.getuser() + '/data/my_temp/best_params40.p', "wb+") as pickle_model_file:
                     pickle.dump(my_dict, pickle_model_file)
