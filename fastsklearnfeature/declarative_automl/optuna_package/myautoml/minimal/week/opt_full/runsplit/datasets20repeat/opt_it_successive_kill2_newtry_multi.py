@@ -353,8 +353,8 @@ def run_force_limit(task_id, dictionary_felix, trial):
 
     try:
         X_train, X_test, y_train, y_test, categorical_indicator, attribute_names = get_data('data', randomstate=my_random_seed, task_id=task_id)
-        if len(X_test) > 1000:
-            X_test, y_test = my_train_test_split_train(X_test, y_test, random_state=42, train_size=1000)
+        #if len(X_test) > 1000:
+        #    X_test, y_test = my_train_test_split_train(X_test, y_test, random_state=42, train_size=1000)
     except Exception as e:
         print('Exception: ' + str(e) + '\n\n')
         traceback.print_exc()
