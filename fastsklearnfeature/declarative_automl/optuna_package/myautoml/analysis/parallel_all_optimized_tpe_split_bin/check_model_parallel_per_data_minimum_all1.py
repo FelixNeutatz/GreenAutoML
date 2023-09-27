@@ -54,7 +54,7 @@ if __name__ == "__main__":
         new_constraint_evaluation_dynamic_all = []
 
         #for minutes_to_search in [5*60]:#[1, 5, 10, 60]:#range(1, 6):
-        for minutes_to_search in [60]:
+        for minutes_to_search in [30]:
 
             current_dynamic = []
 
