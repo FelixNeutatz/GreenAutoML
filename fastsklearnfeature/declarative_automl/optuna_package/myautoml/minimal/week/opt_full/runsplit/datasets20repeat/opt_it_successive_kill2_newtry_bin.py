@@ -397,7 +397,8 @@ def sample_configuration(trial):
     gen = SpaceGenerator()
     space = gen.generate_params()
 
-    if trial.suggest_categorical('tune_space', [True, False]):
+    #if trial.suggest_categorical('tune_space', [True, False]):
+    if trial.suggest_categorical('tune_space', [True]):
         space.sample_parameters(trial) # no tuning of the space
 
     trial.set_user_attr('space', copy.deepcopy(space))
@@ -430,8 +431,9 @@ def sample_configuration(trial):
     else:
         trial.suggest_int('n_ei_candidates', 24, 24, log=True)
 
-    use_ensemble = trial.suggest_categorical('use_ensemble', [True, False])
+    #use_ensemble = trial.suggest_categorical('use_ensemble', [True, False])
     #use_ensemble = trial.suggest_categorical('use_ensemble', [True])
+    use_ensemble = trial.suggest_categorical('use_ensemble', [False])
 
     if use_ensemble:
         if trial.suggest_categorical('tune_ensemble_size', [True, False]):
@@ -509,5 +511,5 @@ def sample_configuration(trial):
 study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(
                                 n_startup_trials=3, n_warmup_steps=0, interval_steps=1
                             ))
-study.optimize(sample_configuration, n_trials=300)
+study.optimize(sample_configuration, n_trials=600)
 tracker.stop()
