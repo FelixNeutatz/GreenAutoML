@@ -54,7 +54,7 @@ if __name__ == "__main__":
         new_constraint_evaluation_dynamic_all = []
 
         #for minutes_to_search in [5*60]:#[1, 5, 10, 60]:#range(1, 6):
-        for number_iterations in [75, 150, 300, 600]:
+        for number_iterations in [600]:#[75, 150, 300, 600]:
 
             current_dynamic = []
 
@@ -81,6 +81,7 @@ if __name__ == "__main__":
 
                     trial = None
                     with open(path_model, "rb") as pickle_model_file:
+                        '''
                         all_trials = pickle.load(pickle_model_file)['study'].trials
                         trial = all_trials[0]
                         for ti in range(1, len(all_trials)):
@@ -89,6 +90,8 @@ if __name__ == "__main__":
                                 trial = t
                             if ti >= number_iterations:
                                 break
+                        '''
+                        trial = pickle.load(pickle_model_file)['study'].best_trial
 
                     space = trial.user_attrs['space']
 
