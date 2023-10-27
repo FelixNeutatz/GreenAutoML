@@ -70,7 +70,7 @@ my_openml_tasks = [211722, 254, 75126, 75237, 189870, 189869, 167085, 75089, 166
 #np.random.seed(42)
 #np.random.shuffle(my_openml_tasks)
 
-search_time = 10#60*5
+search_time = 30#60*5
 topk = 40
 repetitions_count = 1#5#15#10
 
@@ -475,7 +475,7 @@ def sample_configuration(trial):
         shuffle_validation = trial.suggest_categorical('shuffle_validation', [False, True])
         train_best_with_full_data = trial.suggest_categorical('train_best_with_full_data', [False, True])
 
-        if trial.suggest_categorical('use_validation_sampling', [True, False]):
+        if trial.suggest_categorical('use_validation_sampling', [False]):
             if trial.suggest_categorical('tune_validation_sampling', [True, False]):
                 validation_sampling = trial.suggest_int('validation_sampling', 10, 100000, log=True)
             else:
