@@ -70,7 +70,7 @@ my_openml_tasks = [211722, 254, 75126, 75237, 189870, 189869, 167085, 75089, 166
 #np.random.seed(42)
 #np.random.shuffle(my_openml_tasks)
 
-search_time = 30#60*5
+search_time = 60#60*5
 topk = 40
 repetitions_count = 1#5#15#10
 
