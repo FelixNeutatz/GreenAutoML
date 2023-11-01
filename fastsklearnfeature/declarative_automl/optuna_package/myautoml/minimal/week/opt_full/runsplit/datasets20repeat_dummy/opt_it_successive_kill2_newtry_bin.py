@@ -435,7 +435,7 @@ def sample_configuration(trial):
         hold_out_fraction = trial.suggest_uniform('hold_out_fraction', 0.33, 0.33)
 
     sample_fraction = 1.0
-    if trial.suggest_categorical('use_sampling', [True, False]):
+    if trial.suggest_categorical('use_sampling', [True]):
         sample_fraction = trial.suggest_int('sample_fraction', 10, 1000000, log=True)
 
     if trial.suggest_categorical('tune_n_startup_trials', [True, False]):
