@@ -68,7 +68,9 @@ start_total_beginning = time.time()
 #my_openml_tasks = [211722, 254, 75126, 75237, 189870, 189869, 167085, 75089, 166996, 75176, 75195, 167103, 189864, 211723, 75219, 167097, 146594, 75093, 336, 75156]
 
 #all 20
-my_openml_tasks =[189869, 189786, 340, 75154, 190157, 189859, 75237, 75223, 75126, 211722, 211724, 190154, 258, 167204, 236, 189878, 75134, 168791, 75143, 260]
+#my_openml_tasks =[189869, 189786, 340, 75154, 190157, 189859, 75237, 75223, 75126, 211722, 211724, 190154, 258, 167204, 236, 189878, 75134, 168791, 75143, 260]
+
+my_openml_tasks = [75178, 75136, 189878, 75126, 190157, 211722, 75154, 75223, 340, 189870, 258, 189786, 190154, 75250, 166996, 189859, 236, 189880, 167204, 75098, 75134, 75195, 75237, 146597, 167203, 190155, 75153, 189828, 190156, 75109, 2356, 189845, 189840, 2121, 167085, 167205, 75184, 271, 75169, 211723]
 
 #np.random.seed(42)
 #np.random.shuffle(my_openml_tasks)
@@ -185,7 +187,7 @@ def run_AutoML(task_id, return_dict, dictionary_felix, trial, X_train, X_test, y
     dummy_score = dictionary_felix[str(dict_key) + '_dummy']
 
     dynamic_params = []
-    for random_i in range(2):
+    for random_i in range(1):
         search = MyAutoML(cv=cv,
                               number_of_cvs=number_of_cvs,
                               n_jobs=1,
@@ -333,7 +335,7 @@ def run_AutoML_static(task_id, dictionary_felix, trial, X_train, X_test, y_train
     dict_key = str(task_id) + ',' + str(my_random_seed)
 
     dynamic_params = []
-    for random_i in range(2):
+    for random_i in range(1):
 
         gen_new = SpaceGenerator()
         space = gen_new.generate_params()
