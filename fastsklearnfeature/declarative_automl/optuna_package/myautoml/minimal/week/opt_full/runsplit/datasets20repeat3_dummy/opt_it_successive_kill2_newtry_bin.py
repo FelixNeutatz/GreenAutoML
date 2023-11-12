@@ -221,12 +221,10 @@ def run_AutoML(task_id, return_dict, dictionary_felix, trial, X_train, X_test, y
     current_mean = np.mean(dynamic_params)
 
     current_mean -= dummy_score
-    if current_mean < 0:
-        current_mean = 0.0
+    current_mean += 1.0
 
     dynamic_values_I_found -= dummy_score
-    if dynamic_values_I_found < 0:
-        dynamic_values_I_found = 0.0
+    dynamic_values_I_found += 1.0
 
     if max(current_mean, dynamic_values_I_found) == 0.0 or (current_mean - dynamic_values_I_found) == 0.0:
         return 0.0
@@ -528,5 +526,5 @@ def sample_configuration(trial):
 study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(
                                 n_startup_trials=3, n_warmup_steps=0, interval_steps=1
                             ))
-study.optimize(sample_configuration, n_trials=200)
+study.optimize(sample_configuration, n_trials=300)
 tracker.stop()
