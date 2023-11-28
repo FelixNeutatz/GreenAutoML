@@ -18,7 +18,7 @@ import traceback
 
 
 openml.config.apikey = '4384bd56dad8c3d2c0f6630c52ef5567'
-openml.config.cache_directory = '/home/neutatz/phd2/cache_openml'
+openml.config.cache_directory = '/home/' + getpass.getuser() + '/phd2/cache_openml'
 
 my_scorer = make_scorer(balanced_accuracy_score)
 
@@ -94,8 +94,8 @@ for test_holdout_dataset_id in [args.dataset]:
 
     results_dict_log = {}
     results_dict_log['dynamic'] = new_constraint_evaluation_dynamic_all
-    pickle.dump(results_dict_log, open('/home/neutatz/data/automl_runs/log_' + args.outputname + '_' + str(test_holdout_dataset_id) + '.p', 'wb+'))
+    pickle.dump(results_dict_log, open('/home/' + getpass.getuser() + '/data/automl_runs/log_' + args.outputname + '_' + str(test_holdout_dataset_id) + '.p', 'wb+'))
 
     results_dict = {}
     results_dict['dynamic'] = dynamic_approach
-    pickle.dump(results_dict, open('/home/neutatz/data/automl_runs/' + args.outputname + '_' + str(test_holdout_dataset_id) + '.p', 'wb+'))
+    pickle.dump(results_dict, open('/home/' + getpass.getuser() + '/data/automl_runs/' + args.outputname + '_' + str(test_holdout_dataset_id) + '.p', 'wb+'))
