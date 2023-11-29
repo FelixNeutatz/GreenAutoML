@@ -94,8 +94,12 @@ for test_holdout_dataset_id in [args.dataset]:
 
     results_dict_log = {}
     results_dict_log['dynamic'] = new_constraint_evaluation_dynamic_all
-    pickle.dump(results_dict_log, open('/home/' + getpass.getuser() + '/data/automl_runs/log_' + args.outputname + '_' + str(test_holdout_dataset_id) + '.p', 'wb+'))
+
+    with open('/home/' + getpass.getuser() + '/data/automl_runs/log_' + args.outputname + '_' + str(test_holdout_dataset_id) + '.p', 'wb+') as fp:
+        pickle.dump(results_dict_log, fp)
 
     results_dict = {}
     results_dict['dynamic'] = dynamic_approach
-    pickle.dump(results_dict, open('/home/' + getpass.getuser() + '/data/automl_runs/' + args.outputname + '_' + str(test_holdout_dataset_id) + '.p', 'wb+'))
+
+    with open('/home/' + getpass.getuser() + '/data/automl_runs/' + args.outputname + '_' + str(test_holdout_dataset_id) + '.p', 'wb+') as fp:
+        pickle.dump(results_dict, fp)
