@@ -62,7 +62,7 @@ for test_holdout_dataset_id in [args.dataset]:
                 tracker = EmissionsTracker(save_to_file=False)
                 tracker.start()
 
-                classifier = TabPFNClassifierOptuna(N_ensemble_configurations=32)
+                classifier = TabPFNClassifierOptuna(N_ensemble_configurations=32, device='cuda')
                 classifier.fit(X_train_hold, y_train_hold)
                 tracker.stop()
 
