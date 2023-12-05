@@ -58,10 +58,11 @@ for test_holdout_dataset_id in [args.dataset]:
 
             tmp_path = "/home/" + getpass.getuser() + "/data/auto_tmp/autosklearn" + str(time.time()) + '_' + str(np.random.randint(1000)) + 'folder'
 
+            my_tracker_train = MyLogger()
+            my_tracker_inference = MyLogger()
             try:
                 tracker = EmissionsTracker(save_to_file=False)
                 tracker.start()
-                my_tracker_train = MyLogger()
                 my_tracker_train.start()
 
                 classifier = TabPFNClassifierOptuna(N_ensemble_configurations=32, device='cuda')
@@ -73,7 +74,6 @@ for test_holdout_dataset_id in [args.dataset]:
 
                 tracker_inference = EmissionsTracker(save_to_file=False)
                 tracker_inference.start()
-                my_tracker_inference = MyLogger()
                 my_tracker_inference.start()
 
                 y_hat = classifier.predict(X_test_hold)
@@ -98,6 +98,11 @@ for test_holdout_dataset_id in [args.dataset]:
                 print(e)
                 result = 0
                 new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'shit happened', result, more='test'))
+                
+                if my_tracker_inference.started:
+                    my_tracker_inference.stop()
+                if my_tracker_train.started:
+                    my_tracker_train.stop()
             finally:
                 if os.path.exists(tmp_path) and os.path.isdir(tmp_path):
                     shutil.rmtree(tmp_path)
