@@ -3,6 +3,7 @@ import numpy as np
 import pickle
 import getpass
 import subprocess
+import os
 
 class MyLogger:
     def __init__(self):
@@ -24,7 +25,7 @@ class MyLogger:
         self.cpu_series = []
         self.mem_series = []
         with open(self.file_path + '.p', 'rb') as fp:
-            data = pickle.load(open(fp, "rb"))
+            data = pickle.load(fp)
             self.cpu_series = data['cpu_series']
             self.mem_series = data['mem_series']
         os.remove(self.file_path + '.p')
