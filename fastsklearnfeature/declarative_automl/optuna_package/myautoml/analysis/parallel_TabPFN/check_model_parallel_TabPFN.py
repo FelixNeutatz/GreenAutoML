@@ -65,7 +65,8 @@ for test_holdout_dataset_id in [args.dataset]:
                 tracker.start()
                 my_tracker_train.start()
 
-                classifier = TabPFNClassifierOptuna(N_ensemble_configurations=32, device='cuda')
+                #classifier = TabPFNClassifierOptuna(N_ensemble_configurations=32, device='cuda')
+                classifier = TabPFNClassifierOptuna(N_ensemble_configurations=32, device='cpu')
                 classifier.fit(X_train_hold, y_train_hold)
 
                 tracker.stop()
@@ -98,7 +99,7 @@ for test_holdout_dataset_id in [args.dataset]:
                 print(e)
                 result = 0
                 new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'shit happened', result, more='test'))
-                
+
                 if my_tracker_inference.started:
                     my_tracker_inference.stop()
                 if my_tracker_train.started:
