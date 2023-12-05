@@ -36,7 +36,7 @@ class TabPFNClassifierOptuna(TabPFNClassifier):
             self.name += '_' + name_space
 
         self.N_ensemble_configurations = 1
-        self.device = 'cuda'#'cpu'
+        self.device = 'cpu'#'cuda'#'cpu'
         self.kbest = None
 
     def generate_hyperparameters(self, space_gen, depending_node=None):
