@@ -2,7 +2,7 @@ from anytree import RenderTree
 import numpy as np
 
 class ConstraintRun(object):
-    def __init__(self, space, best_trial, test_score, more=None, tracker=None, tracker_inference=None, len_pred=None):
+    def __init__(self, space, best_trial, test_score, more=None, tracker=None, tracker_inference=None, len_pred=None, train_cpu=None, train_mem=None, inference_cpu=None, inference_mem=None):
         self.space = space
         self.best_trial = best_trial
         self.test_score = test_score
@@ -10,6 +10,10 @@ class ConstraintRun(object):
         self.tracker = tracker
         self.tracker_inference = tracker_inference
         self.len_pred = len_pred
+        self.train_cpu = train_cpu
+        self.train_mem = train_mem
+        self.inference_cpu = inference_cpu
+        self.inference_mem = inference_mem
 
     def print_space(self):
         for pre, _, node in RenderTree(self.space.parameter_tree):

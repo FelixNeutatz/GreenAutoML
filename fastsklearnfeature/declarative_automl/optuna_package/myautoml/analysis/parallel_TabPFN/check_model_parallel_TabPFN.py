@@ -14,7 +14,7 @@ import os
 import shutil
 from codecarbon import EmissionsTracker
 import traceback
-
+from fastsklearnfeature.declarative_automl.optuna_package.myautoml.analysis.parallel_TabPFN.MyLogger import MyLogger
 
 
 openml.config.apikey = '4384bd56dad8c3d2c0f6630c52ef5567'
@@ -61,22 +61,38 @@ for test_holdout_dataset_id in [args.dataset]:
             try:
                 tracker = EmissionsTracker(save_to_file=False)
                 tracker.start()
+                my_tracker_train = MyLogger()
+                my_tracker_train.start()
 
                 classifier = TabPFNClassifierOptuna(N_ensemble_configurations=32, device='cuda')
                 classifier.fit(X_train_hold, y_train_hold)
+
                 tracker.stop()
+                my_tracker_train.stop()
+
 
                 tracker_inference = EmissionsTracker(save_to_file=False)
                 tracker_inference.start()
+                my_tracker_inference = MyLogger()
+                my_tracker_inference.start()
+
                 y_hat = classifier.predict(X_test_hold)
+
                 tracker_inference.stop()
+                my_tracker_inference.stop()
 
 
                 print("Predictions:  \n", y_hat)
 
                 result = balanced_accuracy_score(y_test_hold, y_hat)
 
-                new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values, tracker_inference=tracker_inference.final_emissions_data.values, len_pred=len(X_test_hold)))
+                new_constraint_evaluation_dynamic.append(ConstraintRun('test', 'test', result, more='test', tracker=tracker.final_emissions_data.values,
+                                                                       tracker_inference=tracker_inference.final_emissions_data.values,
+                                                                       len_pred=len(X_test_hold),
+                                                                       train_cpu=my_tracker_train.cpu_series,
+                                                                       train_mem=my_tracker_train.mem_series,
+                                                                       inference_cpu=my_tracker_inference.cpu_series,
+                                                                       inference_mem=my_tracker_inference.mem_series))
             except Exception as e:
                 traceback.print_exc()
                 print(e)

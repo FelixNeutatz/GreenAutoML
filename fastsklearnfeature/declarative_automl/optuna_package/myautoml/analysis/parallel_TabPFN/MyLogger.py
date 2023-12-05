@@ -1,0 +1,24 @@
+import os
+import time
+import numpy as np
+import pickle
+
+class MyLogger:
+    def start(self):
+        my_rand_file = 'logging' + str(time.time()) + str(np.random.randint(0, high=1000))
+        os.system('"logg_stuff.py ' + my_rand_file + '"')
+        self.file_path = '/tmp/' + my_rand_file
+        open(self.file_path, 'a').close()
+
+    def stop(self):
+        open(self.file_path, 'a').close()
+
+        time.sleep(10)
+
+        self.cpu_series = []
+        self.mem_series = []
+        with open(self.file_path + '.p', 'rb') as fp:
+            data = pickle.load(open(fp, "rb"))
+            self.cpu_series = data['cpu_series']
+            self.mem_series = data['mem_series']
+        os.remove(self.file_path + '.p')
