@@ -2,6 +2,7 @@ import os
 import time
 import numpy as np
 import pickle
+import getpass
 
 class MyLogger:
     def __init__(self):
@@ -9,7 +10,7 @@ class MyLogger:
 
     def start(self):
         my_rand_file = 'logging' + str(time.time()) + str(np.random.randint(0, high=1000))
-        os.system('"logg_stuff.py ' + my_rand_file + '"')
+        os.system('"python /home/' + getpass.getuser() + '/Software/GreenAutoML/fastsklearnfeature/declarative_automl/optuna_package/myautoml/analysis/parallel_TabPFN/logg_stuff.py ' + my_rand_file + '"')
         self.file_path = '/tmp/' + my_rand_file
         self.started = True
 
