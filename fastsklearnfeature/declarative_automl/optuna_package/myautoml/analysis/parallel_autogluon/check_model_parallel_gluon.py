@@ -45,7 +45,7 @@ for test_holdout_dataset_id in [args.dataset]:
 
     new_constraint_evaluation_dynamic_all = []
 
-    for minutes_to_search in [10]:#[10, 30, 60, 5*60]:
+    for minutes_to_search in [10, 30, 60, 5*60]:
     #for minutes_to_search in [5 * 60]:
 
         current_dynamic = []
