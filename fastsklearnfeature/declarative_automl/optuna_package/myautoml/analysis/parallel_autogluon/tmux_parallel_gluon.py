@@ -11,7 +11,7 @@ datasets = [168794, 168797, 168796, 189871, 189861, 167185, 189872, 189908, 7510
 program = '/home/' + getpass.getuser() + '/Software/GreenAutoML/fastsklearnfeature/declarative_automl/optuna_package/myautoml/analysis/parallel_autogluon/check_model_parallel_gluon.py'
 outputname = 'gluon'
 
-conda_name = 'GreenAutoMLD'
+conda_name = 'Green'
 
 parallelism = 1#15#multiprocessing.cpu_count()
 server = libtmux.Server()
