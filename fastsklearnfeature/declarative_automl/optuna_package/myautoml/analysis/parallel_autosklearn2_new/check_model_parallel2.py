@@ -9,9 +9,7 @@ import time
 import os
 import shutil
 import traceback
-import autosklearn.classification
 import sklearn
-from multiprocessing import Process, set_start_method, Manager
 
 from anytree import RenderTree
 import numpy as np
@@ -214,25 +212,74 @@ if __name__ == "__main__":
 
                 result = 0.0
 
-                manager = Manager()
-                return_dict = manager.dict()
-                return_dict['categorical_indicator_hold'] = categorical_indicator_hold
-                return_dict['search_time_frozen'] = search_time_frozen
-                return_dict['repeat'] = repeat
-                return_dict['X_train_hold'] = X_train_hold
-                return_dict['y_train_hold'] = y_train_hold
-                return_dict['X_test_hold'] = X_test_hold
-                return_dict['y_test_hold'] = y_test_hold
-                my_process = Process(target=evaluatePipeline, name='start', args=(return_dict,))
-                my_process.start()
-                #my_process.join(int(minutes_to_search*3))
-                my_process.join()
+                tmp_path = "/home/" + getpass.getuser() + "/data/auto_tmp/autosklearn" + str(time.time()) + '_' + str(
+                    np.random.randint(1000)) + 'folder'
 
-                # If thread is active
-                while my_process.is_alive():
-                    # Terminate foo
-                    my_process.terminate()
-                    my_process.join()
+                return_dict = {}
+
+                #try:
+                if True:
+                    automl = None
+                    with OfflineEmissionsTracker(save_to_file=False, country_iso_code="CAN",
+                                                 project_name="train" + str(test_holdout_dataset_id) + str(
+                                                         time.time())) as tracker:
+
+                        feat_type = []
+                        for c_i in range(len(categorical_indicator_hold)):
+                            if categorical_indicator_hold[c_i]:
+                                feat_type.append('Categorical')
+                            else:
+                                feat_type.append('Numerical')
+
+                        X_train_sample = X_train_hold
+                        y_train_sample = y_train_hold
+
+                        automl = AutoSklearn2Classifier(
+                            time_left_for_this_task=search_time_frozen,
+                            delete_tmp_folder_after_terminate=True,
+                            metric=balanced_accuracy,
+                            seed=repeat,
+                            memory_limit=1024 * 250,
+                            tmp_folder=tmp_path
+                        )
+                        automl.fit(X_train_sample.copy(), y_train_sample.copy(), feat_type=feat_type,
+                                   metric=balanced_accuracy)
+
+                        '''
+                        automl = autosklearn.classification.AutoSklearnClassifier(time_left_for_this_task=search_time_frozen,
+                                                                                  delete_tmp_folder_after_terminate=True,
+                                                                                  metric=balanced_accuracy,
+                                                                                  seed=repeat,
+                                                                                  memory_limit=1024 * 250,
+                                                                                  tmp_folder=tmp_path, n_jobs=1)
+                        automl.fit(X_train_sample.copy(), y_train_sample.copy(), feat_type=feat_type)
+                        '''
+
+                        # automl.refit(X_train_sample.copy(), y_train_sample.copy())
+
+                    with OfflineEmissionsTracker(save_to_file=False, country_iso_code="CAN",
+                                                 project_name="inference" + str(test_holdout_dataset_id) + str(
+                                                         time.time())) as tracker_inference:
+                        y_hat = automl.predict(X_test_hold)
+                    result = balanced_accuracy_score(y_test_hold, y_hat)
+                    return_dict['result'] = result
+                    return_dict['tracker'] = tracker.final_emissions_data.values
+                    return_dict['tracker_inference'] = tracker_inference.final_emissions_data.values
+                    return_dict['len_pred'] = len(X_test_hold)
+
+                '''
+                except Exception as e:
+                    traceback.print_exc()
+                    print(e)
+                    return_dict['result'] = 0
+                    return_dict['tracker'] = None
+                    return_dict['tracker_inference'] = None
+                    return_dict['len_pred'] = None
+                '''
+
+                if os.path.exists(tmp_path) and os.path.isdir(tmp_path):
+                    # shutil.rmtree(tmp_path)
+                    os.system('rm -fr "%s"' % tmp_path)
 
                 new_constraint_evaluation_dynamic.append(
                     ConstraintRun('test', 'test', return_dict['result'], more='test', tracker=return_dict['tracker'],
