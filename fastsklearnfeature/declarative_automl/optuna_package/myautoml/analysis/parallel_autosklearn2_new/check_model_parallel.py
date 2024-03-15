@@ -201,7 +201,7 @@ if __name__ == "__main__":
 
         #for minutes_to_search in [10, 30, 60, 5 * 60]:
         #for minutes_to_search in [30, 60, 5 * 60]:
-        for minutes_to_search in [5 * 60]:
+        for minutes_to_search in [30]:
             # for minutes_to_search in [5 * 60]:
 
             current_dynamic = []
@@ -248,8 +248,10 @@ if __name__ == "__main__":
 
         results_dict_log = {}
         results_dict_log['dynamic'] = new_constraint_evaluation_dynamic_all
-        pickle.dump(results_dict_log, open('/home/neutatz/data/automl_runs/log_' + args.outputname + '_' + str(test_holdout_dataset_id) + '.p', 'wb+'))
+        with open('/home/neutatz/data/automl_runs/log_' + args.outputname + '_' + str(test_holdout_dataset_id) + '.p', 'wb+') as outfile:
+            pickle.dump(results_dict_log, outfile)
 
         results_dict = {}
         results_dict['dynamic'] = dynamic_approach
-        pickle.dump(results_dict, open('/home/neutatz/data/automl_runs/' + args.outputname + '_' + str(test_holdout_dataset_id) + '.p', 'wb+'))
+        with open('/home/neutatz/data/automl_runs/' + args.outputname + '_' + str(test_holdout_dataset_id) + '.p', 'wb+') as outfile2:
+            pickle.dump(results_dict, outfile2)
