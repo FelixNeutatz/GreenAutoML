@@ -4,7 +4,6 @@ import openml
 from sklearn.metrics import balanced_accuracy_score
 from autosklearn.metrics import balanced_accuracy
 from autosklearn.experimental.askl2 import AutoSklearn2Classifier
-from codecarbon import EmissionsTracker
 import getpass
 import time
 import os
@@ -16,6 +15,7 @@ from multiprocessing import Process, set_start_method, Manager
 
 from anytree import RenderTree
 import numpy as np
+from codecarbon import OfflineEmissionsTracker
 
 class ConstraintRun(object):
     def __init__(self, space, best_trial, test_score, more=None, tracker=None, tracker_inference=None, len_pred=None):
@@ -131,47 +131,45 @@ def evaluatePipeline(return_dict):
         np.random.randint(1000)) + 'folder'
 
     try:
-        tracker = EmissionsTracker(save_to_file=False)
-        tracker.start()
+        automl = None
+        with OfflineEmissionsTracker(save_to_file=False, country_iso_code="CAN", project_name="train"+str(test_holdout_dataset_id)+ str(time.time())) as tracker:
 
-        feat_type = []
-        for c_i in range(len(categorical_indicator_hold)):
-            if categorical_indicator_hold[c_i]:
-                feat_type.append('Categorical')
-            else:
-                feat_type.append('Numerical')
+            feat_type = []
+            for c_i in range(len(categorical_indicator_hold)):
+                if categorical_indicator_hold[c_i]:
+                    feat_type.append('Categorical')
+                else:
+                    feat_type.append('Numerical')
 
-        X_train_sample = X_train_hold
-        y_train_sample = y_train_hold
-
-        '''
-        automl = AutoSklearn2Classifier(
-            time_left_for_this_task=search_time_frozen,
-            delete_tmp_folder_after_terminate=True,
-            metric=balanced_accuracy,
-            seed=repeat,
-            memory_limit=1024 * 250,
-            tmp_folder=tmp_path
-        )
-        automl.fit(X_train_sample.copy(), y_train_sample.copy(), feat_type=feat_type, metric=balanced_accuracy)
-        '''
-        automl = autosklearn.classification.AutoSklearnClassifier(time_left_for_this_task=search_time_frozen,
-                                                                  delete_tmp_folder_after_terminate=True,
-                                                                  metric=balanced_accuracy,
-                                                                  seed=repeat,
-                                                                  memory_limit=1024 * 250,
-                                                                  tmp_folder=tmp_path, n_jobs=1)
-        automl.fit(X_train_sample.copy(), y_train_sample.copy(), feat_type=feat_type)
-
-        # automl.refit(X_train_sample.copy(), y_train_sample.copy())
+            X_train_sample = X_train_hold
+            y_train_sample = y_train_hold
 
 
-        tracker.stop()
+            automl = AutoSklearn2Classifier(
+                time_left_for_this_task=search_time_frozen,
+                delete_tmp_folder_after_terminate=True,
+                metric=balanced_accuracy,
+                seed=repeat,
+                memory_limit=1024 * 250,
+                tmp_folder=tmp_path
+            )
+            automl.fit(X_train_sample.copy(), y_train_sample.copy(), feat_type=feat_type, metric=balanced_accuracy)
 
-        tracker_inference = EmissionsTracker(save_to_file=False)
-        tracker_inference.start()
-        y_hat = automl.predict(X_test_hold)
-        tracker_inference.stop()
+
+            '''
+            automl = autosklearn.classification.AutoSklearnClassifier(time_left_for_this_task=search_time_frozen,
+                                                                      delete_tmp_folder_after_terminate=True,
+                                                                      metric=balanced_accuracy,
+                                                                      seed=repeat,
+                                                                      memory_limit=1024 * 250,
+                                                                      tmp_folder=tmp_path, n_jobs=1)
+            automl.fit(X_train_sample.copy(), y_train_sample.copy(), feat_type=feat_type)
+            '''
+
+            # automl.refit(X_train_sample.copy(), y_train_sample.copy())
+
+        with OfflineEmissionsTracker(save_to_file=False, country_iso_code="CAN", project_name="inference"+str(test_holdout_dataset_id)+ str(time.time())) as tracker_inference:
+            y_hat = automl.predict(X_test_hold)
         result = balanced_accuracy_score(y_test_hold, y_hat)
         return_dict['result'] = result
         return_dict['tracker'] = tracker.final_emissions_data.values
@@ -202,7 +200,8 @@ if __name__ == "__main__":
         new_constraint_evaluation_dynamic_all = []
 
         #for minutes_to_search in [10, 30, 60, 5 * 60]:
-        for minutes_to_search in [30, 60, 5 * 60]:
+        #for minutes_to_search in [30, 60, 5 * 60]:
+        for minutes_to_search in [30]:
             # for minutes_to_search in [5 * 60]:
 
             current_dynamic = []
