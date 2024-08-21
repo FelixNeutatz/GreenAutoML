@@ -77,5 +77,7 @@ We report all raw benchmark results in Google Sheets.
 
 ## Notebooks for experiments with GPUs
 For the experiments with GPUs, we created notebooks in Google Colab:
-[Experiment AutoGluon with GPUs](https://colab.research.google.com/drive/13OgpaPEnBsnFNMDsSeI9jcu4pPU1aVhP?usp=sharing)
-[Experiment TabPFN with GPUs](https://colab.research.google.com/drive/1RmvZXxau5zfXHbwLq6qrowY-WZ3wOKZQ?usp=sharing)
+| Experiment   | 
+| ---          |
+| [AutoGluon with GPUs](https://colab.research.google.com/drive/13OgpaPEnBsnFNMDsSeI9jcu4pPU1aVhP?usp=sharing) |
+| [TabPFN with GPUs](https://colab.research.google.com/drive/1RmvZXxau5zfXHbwLq6qrowY-WZ3wOKZQ?usp=sharing) |
