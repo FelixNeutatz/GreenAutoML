@@ -69,3 +69,8 @@ We list the datasets that we use in our benchmark:
 | jungle_chess_2pcs_raw_endgame_complete | [189909](https://openml.org/search?type=task&id=189909) | [41027](https://openml.org/search?type=data&id=41027) | 44819 | 6 | 3 |
 | phoneme | [167190](https://openml.org/search?type=task&id=167190) | [1489](https://openml.org/search?type=data&id=1489) | 5404 | 5 | 2 |
 | blood-transfusion-service-center | [167184](https://openml.org/search?type=task&id=167184) | [1464](https://openml.org/search?type=data&id=1464) | 748 | 4 | 2 |
+
+## Benchmark Results
+We report all raw benchmark results in Google Sheets.
+
+[Balanced Accuracy across search times 10s, 30s, 60s, 300s](https://docs.google.com/spreadsheets/d/1Q1uGuEhlknHgnsaCG1ONuQClv6OJCAqeW0lvmrg8q3A/edit?usp=sharing)
