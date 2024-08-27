@@ -73,9 +73,11 @@ We list the datasets that we use in our benchmark:
 ## Benchmark Results
 We report all raw benchmark results in Google Sheets.
 
-[Balanced Accuracy across search times 10s, 30s, 60s, 300s](https://docs.google.com/spreadsheets/d/1Q1uGuEhlknHgnsaCG1ONuQClv6OJCAqeW0lvmrg8q3A/edit?usp=sharing)
-[Energy Consumption for AutoML Execution 10s, 30s, 60s, 300s](https://docs.google.com/spreadsheets/d/1Qxq8o3bgY33cCWfsUj5t3XO_4ubzqgHLbIEzGasDB1k/edit?usp=sharing)
-[Energy Consumption for AutoML Inference 10s, 30s, 60s, 300s](https://docs.google.com/spreadsheets/d/12ORcKPU0_KZTM4En9ua2E_fQaNu5diyHb7OFRB2nxK0/edit?usp=sharing)
+| Raw Experiment Results  |
+| ---  | 
+| [Balanced Accuracy across search times 10s, 30s, 60s, 300s](https://docs.google.com/spreadsheets/d/1Q1uGuEhlknHgnsaCG1ONuQClv6OJCAqeW0lvmrg8q3A/edit?usp=sharing) |
+| [Energy Consumption for AutoML Execution 10s, 30s, 60s, 300s](https://docs.google.com/spreadsheets/d/1Qxq8o3bgY33cCWfsUj5t3XO_4ubzqgHLbIEzGasDB1k/edit?usp=sharing) |
+| [Energy Consumption for AutoML Inference 10s, 30s, 60s, 300s](https://docs.google.com/spreadsheets/d/12ORcKPU0_KZTM4En9ua2E_fQaNu5diyHb7OFRB2nxK0/edit?usp=sharing) |
 
 ## Notebooks for experiments with GPUs
 For the experiments with GPUs, we created notebooks in Google Colab:
