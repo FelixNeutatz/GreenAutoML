@@ -79,6 +79,15 @@ We report all raw benchmark results in Google Sheets.
 | [Energy Consumption for AutoML Execution 10s, 30s, 60s, 300s](https://docs.google.com/spreadsheets/d/1Qxq8o3bgY33cCWfsUj5t3XO_4ubzqgHLbIEzGasDB1k/edit?usp=sharing) |
 | [Energy Consumption for AutoML Inference 10s, 30s, 60s, 300s](https://docs.google.com/spreadsheets/d/12ORcKPU0_KZTM4En9ua2E_fQaNu5diyHb7OFRB2nxK0/edit?usp=sharing) |
 
+## Best AutoML System across search times (dataset-level analysis)
+We report all raw benchmark results in Google Sheets.
+
+| Best AutoML Systems  |
+| ---  | 
+| [sorted by # rows](https://docs.google.com/spreadsheets/d/1GueVZbCXaEZ3JXkqyLp1Yx_7mGM1973A15yjnXUMF_k/edit?gid=0#gid=0) |
+| [sorted by # features](https://docs.google.com/spreadsheets/d/1GueVZbCXaEZ3JXkqyLp1Yx_7mGM1973A15yjnXUMF_k/edit?gid=1453111831#gid=1453111831) |
+| [sorted by # classes](https://docs.google.com/spreadsheets/d/1GueVZbCXaEZ3JXkqyLp1Yx_7mGM1973A15yjnXUMF_k/edit?gid=653481614#gid=653481614) |
+
 ## Notebooks for experiments with GPUs
 For the experiments with GPUs, we created notebooks in Google Colab:
 | Experiment   | 
